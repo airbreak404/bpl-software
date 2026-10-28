@@ -145,7 +145,7 @@ def run_analysis(csv_file, save_folder=None):
     print("=" * 50 + "\n")
     
     # -------------------------------------------------------------
-    # Step 4: Draw publication-quality charts
+    # Step 4: Plot the graphs
     # -------------------------------------------------------------
     fig, axes = plt.subplots(3 if has_temp else 2, 1, figsize=(10, 8 if has_temp else 6), sharex=True)
     

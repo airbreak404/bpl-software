@@ -1,6 +1,6 @@
 # BPL Software & Data Processing — Helpful Learning Links
 
-Here is a curated list of outside links, videos, and documentation for anyone on the team looking to get up to speed on how our rocket test stand code, sensors, and data processing work.
+Here are some helpful links, videos, and docs for anyone on the team looking to get up to speed on how our rocket test stand code, sensors, and data processing work.
 
 ---
 

@@ -8,12 +8,12 @@ Team Members: Tyler Howard, Sarah Marcinkiewicz, Sofia Martinez
 
 ## What is this?
 
-This repository contains the software suite developed for the BPL Static Test Stand.
+Software and test tools for the Bronco Propulsion Laboratory (BPL) Static Test Stand at Western Michigan University.
 
-During a rocket motor static fire, the motor is clamped down into the test stand and fired for approximately 1.5 to 2.5 seconds. Our system handles three main tasks:
-1. **Sensor Acquisition:** An ESP32-S3 reads the load cell scale and three thermocouple temperature probes 200 times per second.
-2. **Local & Remote Logging:** All readings are written directly to a high-speed MicroSD card on the stand while simultaneously broadcasting live telemetry over Wi-Fi back to a laptop.
-3. **Post-Test Data Processing:** Python scripts parse the raw test logs, calculate performance metrics (peak force, average force, burn duration, total impulse, motor classification), and generate publication-quality charts and formatted Excel summaries.
+During a static fire test, the motor is clamped down into the test stand and fired for about 1.5 to 2.5 seconds. Our setup handles three main jobs:
+1. **Reads the sensors:** An ESP32-S3 reads the load cell scale and three thermocouple temperature probes 200 times per second.
+2. **Logs everything:** Saves every reading to an onboard MicroSD card so nothing gets lost, and sends live telemetry over Wi-Fi back to a laptop.
+3. **Processes the data:** Python scripts parse the test CSV, calculate peak thrust, average thrust, burn time, total impulse, and motor classification, and export clean graphs and an Excel summary.
 
 ---
 
@@ -22,8 +22,8 @@ During a rocket motor static fire, the motor is clamped down into the test stand
 ```
 BPL_Software/
 ├── README.md                          # Subteam documentation and instructions
-├── requirements.txt                   # Python package dependencies
-├── processor.py                       # Post-test analysis (charts + Excel summaries)
+├── requirements.txt                   # Python dependencies (pip install -r requirements.txt)
+├── processor.py                       # Post-test analysis (graphs + Excel summaries)
 ├── simulator.py                       # Test data generator (J425R, J435WS, J450DM, KNSB)
 ├── ground_station.py                  # Live telemetry receiver & terminal dashboard
 ├── bpl_serial_studio_dashboard.json   # Serial Studio real-time visualizer config
@@ -35,43 +35,38 @@ BPL_Software/
 ├── firmware/
 │   └── bpl_test_stand_esp32.ino       # Dual-core ESP32-S3 firmware (KiCad Rev 2)
 ├── data/                              # Test run CSV logs
-└── reports/                           # Generated report charts (.png) and workbooks (.xlsx)
+└── reports/                           # Output PNG charts and Excel workbooks
 ```
 
 ---
 
-## Getting Started
+## Setup & Usage
 
-### 1. Python Environment Setup
-Install the required packages in a virtual environment:
-
+### 1. Set up Python environment
 ```bash
-# Create and activate a virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Generate Simulated Test Data
-To test the software pipeline at home without needing a live rocket motor:
+### 2. Generate simulated test data
+To test changes at home without needing a live rocket motor:
 ```bash
 python simulator.py --motor J425R
 ```
-This generates a realistic test dataset in `data/` simulating ignition transients, combustion noise, burn duration, and heat soaking.
+This drops a simulated test run into `data/` (with realistic ignition curve, combustion flutter, and thermocouple heating).
 
-### 3. Run Post-Test Analysis
+### 3. Run post-test analysis
 ```bash
 python processor.py
 ```
-Automatically locates the latest CSV in `data/`, tares baseline sensor offset, extracts the active burn window (5% peak threshold), calculates total impulse (`np.trapezoid`), and outputs:
-* High-resolution plot in `reports/*_report.png`
-* Formatted summary spreadsheet in `reports/*_summary.xlsx`
+Picks up the newest test in `data/`, zeroes out the scale baseline, finds the burn window, calculates total impulse, and outputs:
+* Summary plot: `reports/*_report.png`
+* Formatted spreadsheet: `reports/*_summary.xlsx`
 
-### 4. Run Live Ground Station
+### 4. Run live ground station
 ```bash
-# Live demo simulation:
+# Terminal mock demo:
 python ground_station.py --mock
 
 # Live test day listening mode (UDP 4242):
