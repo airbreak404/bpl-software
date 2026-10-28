@@ -1,12 +1,15 @@
 # BPL Rocket Stand - Test Data Simulator
 # Generates fake test fire numbers so we can test our software without blowing up actual rocket motors.
 
+import os
 import argparse
 import random
 import math
 import pandas as pd
 import numpy as np
 from datetime import datetime
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Standard motor specs from the manufacturer spec sheets
 MOTOR_SPECS = {
@@ -131,7 +134,9 @@ def main():
         out_path = args.out
     else:
         now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = f"/Users/thoward/Documents/AIAA/BPL_Software/data/simulated_{args.motor}_{now_str}.csv"
+        data_dir = os.path.join(BASE_DIR, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        out_path = os.path.join(data_dir, f"simulated_{args.motor}_{now_str}.csv")
         
     df.to_csv(out_path, index=False)
     print(f"Done! Saved {len(df)} rows to: {out_path}")

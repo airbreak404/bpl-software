@@ -15,6 +15,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # 1 pound of force (lbf) = 4.44822 Newtons (N)
 LBF_TO_NEWTONS = 4.4482216
 
@@ -194,7 +196,7 @@ def run_analysis(csv_file, save_folder=None):
     plt.tight_layout()
     
     # Save the chart PNG
-    out_dir = save_folder or "/Users/thoward/Documents/AIAA/BPL_Software/reports"
+    out_dir = save_folder or os.path.join(BASE_DIR, "reports")
     os.makedirs(out_dir, exist_ok=True)
     base = os.path.splitext(os.path.basename(csv_file))[0]
     out_img = os.path.join(out_dir, f"{base}_report.png")
@@ -272,7 +274,7 @@ def main():
         target = args.file
     else:
         # If no file is specified, pick the newest CSV in the data folder
-        files = glob.glob("/Users/thoward/Documents/AIAA/BPL_Software/data/*.csv")
+        files = glob.glob(os.path.join(BASE_DIR, "data", "*.csv"))
         if not files:
             print("No CSV files found in data/. Run simulator.py first.")
             return

@@ -9,6 +9,8 @@ import argparse
 import socket
 from datetime import datetime
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 def run_mock_stream(log_path, rate=50):
     """Generates a fake live test fire right on your laptop so you can test the UI."""
     from simulator import make_fake_test_run
@@ -91,7 +93,9 @@ def main():
     args = parser.parse_args()
     
     now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = args.out or f"/Users/thoward/Documents/AIAA/BPL_Software/data/telemetry_{now_str}.csv"
+    data_dir = os.path.join(BASE_DIR, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    log_file = args.out or os.path.join(data_dir, f"telemetry_{now_str}.csv")
     
     if args.mock:
         run_mock_stream(log_file)
