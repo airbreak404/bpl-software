@@ -1,6 +1,12 @@
 # BPL Rocket Stand - Test Data Processor
-# Takes the raw numbers from a test fire, zeroes out the scale, finds the burn time, and draws clean charts.
 # Author: Tyler Howard (Software Subteam)
+#
+# What this script does:
+# 1. Reads a CSV test file from the rocket stand (or simulator).
+# 2. Tares (zeroes) the scale so we don't accidentally measure the motor's resting weight.
+# 3. Finds exactly when the rocket ignited and when it burned out.
+# 4. Calculates peak force, average force, burn duration, and total energy (total impulse).
+# 5. Generates a clean chart PNG and a formatted summary Excel workbook.
 
 import os
 import glob
@@ -9,10 +15,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# 1 pound of force = 4.44822 Newtons
+# 1 pound of force (lbf) = 4.44822 Newtons (N)
 LBF_TO_NEWTONS = 4.4482216
 
-# Standard rocketry motor letter sizes based on total impulse (in Newton-seconds)
+# Standard rocket motor letter classes (A through M) based on total impulse in Newton-seconds.
+# In rocketry, every letter has double the total push energy of the letter before it.
 MOTOR_CLASSES = [
     ("A", 1.26, 2.5),
     ("B", 2.51, 5.0),
@@ -30,6 +37,10 @@ MOTOR_CLASSES = [
 ]
 
 def find_motor_letter(impulse_ns):
+    """
+    Takes total impulse in Newton-seconds and returns which letter class it belongs to
+    (e.g. 'I class (approx 43% into class)').
+    """
     for letter, low, high in MOTOR_CLASSES:
         if low <= impulse_ns <= high:
             pct = ((impulse_ns - low) / (high - low)) * 100
@@ -40,67 +51,84 @@ def find_motor_letter(impulse_ns):
 
 def run_analysis(csv_file, save_folder=None):
     if not os.path.exists(csv_file):
-        print(f"Cannot find file: {csv_file}")
+        print(f"Error: Cannot find file '{csv_file}'")
         return None
         
     print(f"\nAnalyzing test file: {os.path.basename(csv_file)}")
     
+    # Read the raw CSV file into a table
     df = pd.read_csv(csv_file)
     if "timestamp_ms" not in df.columns or "thrust_lbf" not in df.columns:
-        print("Missing required columns (timestamp_ms, thrust_lbf).")
+        print("Error: Missing required columns (timestamp_ms, thrust_lbf).")
         return None
         
-    # Convert milliseconds to seconds
+    # Convert timestamps from milliseconds to seconds starting at 0.0s
     df["time_sec"] = (df["timestamp_ms"] - df["timestamp_ms"].iloc[0]) / 1000.0
     
-    # Calculate sample speed
+    # Check how fast the sensor was recording (sampling rate)
     dt = df["time_sec"].diff().median()
     hz = (1.0 / dt) if dt > 0 else 0
     print(f"Data points: {len(df):,} | Sampling speed: {hz:.0f} readings/sec | Total log time: {df['time_sec'].iloc[-1]:.2f}s")
     
-    # 1. Zero out the scale (tare)
+    # -------------------------------------------------------------
+    # Step 1: Zero out the scale (Tare)
+    # Just like hitting "tare" on a kitchen scale before pouring sugar.
+    # We take the median of the first half-second while the rocket is just sitting
+    # there cold on the stand, and subtract that baseline weight from every reading.
+    # -------------------------------------------------------------
     idle_points = df[df["time_sec"] < 0.5]
     tare_offset = idle_points["thrust_lbf"].median() if len(idle_points) > 5 else 0.0
     df["clean_thrust_lbf"] = (df["thrust_lbf"] - tare_offset).clip(lower=0.0)
     
-    # Smooth out electronic noise with a rolling average
+    # Smooth out tiny electronic sensor wiggles using a 5-point rolling average
     df["smooth_thrust_lbf"] = df["clean_thrust_lbf"].rolling(window=5, min_periods=1, center=True).mean()
     
-    # 2. Find when the motor actually burned
+    # -------------------------------------------------------------
+    # Step 2: Find when the rocket actually lit and when it went out
+    # We find the peak force, then set a 5% threshold. Anything above 5% of peak
+    # is considered part of the real motor burn. This cleanly ignores any tiny bumps
+    # before ignition and cuts off right when the flame dies down.
+    # -------------------------------------------------------------
     peak_force = df["smooth_thrust_lbf"].max()
-    threshold = 0.05 * peak_force  # 5% of peak marks start and end of fire
+    threshold = 0.05 * peak_force  
     
     burn_pts = df[df["smooth_thrust_lbf"] >= threshold]
     if len(burn_pts) < 5:
-        print("Could not find a clear motor firing in this data file.")
+        print("Warning: Could not find a clear motor firing in this data file.")
         return None
         
     t_start = burn_pts["time_sec"].iloc[0]
     t_end = burn_pts["time_sec"].iloc[-1]
     burn_time = t_end - t_start
     
-    # Data during just the burn
+    # Subset of data during just the active firing
     burn_df = df[(df["time_sec"] >= t_start) & (df["time_sec"] <= t_end)].copy()
     
-    # 3. Calculate numbers
+    # -------------------------------------------------------------
+    # Step 3: Calculate the numbers everyone asks for
+    # -------------------------------------------------------------
     peak_newtons = peak_force * LBF_TO_NEWTONS
     avg_force = burn_df["clean_thrust_lbf"].mean()
     avg_newtons = avg_force * LBF_TO_NEWTONS
     
-    # Total impulse = sum of (force * time slice) in Newtons
+    # Total Impulse: This is the total "push energy" the motor produced.
+    # Rocket scientists call this the "area under the curve". In code, it literally
+    # just means multiplying each little slice of force by the time slice (dt)
+    # and adding them all together using the trapezoid rule.
     burn_newtons = burn_df["clean_thrust_lbf"] * LBF_TO_NEWTONS
     total_impulse = float(np.trapezoid(burn_newtons.values, burn_df["time_sec"].values))
     motor_class = find_motor_letter(total_impulse)
     
-    # Cumulative push over time
+    # Running cumulative push across the whole test (for the middle graph)
     df["thrust_newtons"] = df["clean_thrust_lbf"] * LBF_TO_NEWTONS
     df["running_impulse"] = np.cumsum(df["thrust_newtons"] * dt)
     
+    # Temperature check (if thermocouples were hooked up during this test)
     has_temp = "temp_casing_f" in df.columns and "temp_nozzle_f" in df.columns
     max_casing = df["temp_casing_f"].max() if has_temp else 0.0
     max_nozzle = df["temp_nozzle_f"].max() if has_temp else 0.0
     
-    # Print clean results
+    # Print clean results to the terminal
     print("\n" + "=" * 50)
     print("              TEST RESULTS SUMMARY               ")
     print("=" * 50)
@@ -114,16 +142,18 @@ def run_analysis(csv_file, save_folder=None):
         print(f"Max Nozzle Temp:   {max_nozzle:.1f} °F")
     print("=" * 50 + "\n")
     
-    # 4. Draw plots
+    # -------------------------------------------------------------
+    # Step 4: Draw publication-quality charts
+    # -------------------------------------------------------------
     fig, axes = plt.subplots(3 if has_temp else 2, 1, figsize=(10, 8 if has_temp else 6), sharex=True)
     
-    # Plot 1: Force vs Time
+    # Top Plot: Force vs Time
     ax1 = axes[0]
-    ax1.plot(df["time_sec"], df["clean_thrust_lbf"], color="#90caf9", label="Raw Sensor", alpha=0.6, linewidth=1)
+    ax1.plot(df["time_sec"], df["clean_thrust_lbf"], color="#90caf9", label="Raw Sensor Readings", alpha=0.6, linewidth=1)
     ax1.plot(df["time_sec"], df["smooth_thrust_lbf"], color="#0d47a1", label="Filtered Curve", linewidth=2)
     ax1.fill_between(burn_df["time_sec"], burn_df["smooth_thrust_lbf"], color="#1976d2", alpha=0.2, label="Burn Window")
     
-    # Peak marker
+    # Callout box pointing right at the peak force
     peak_idx = df["smooth_thrust_lbf"].idxmax()
     peak_t = df["time_sec"].iloc[peak_idx]
     ax1.annotate(f"Peak: {peak_force:.1f} lbs ({peak_newtons:.0f} N)",
@@ -140,15 +170,15 @@ def run_analysis(csv_file, save_folder=None):
     ax1.grid(True, linestyle=":", alpha=0.6)
     ax1.legend(loc="upper right")
     
-    # Plot 2: Total Push (Cumulative Impulse)
+    # Middle Plot: Cumulative Impulse (how total energy climbed over time)
     ax2 = axes[1]
-    ax2.plot(df["time_sec"], df["running_impulse"], color="#e65100", linewidth=2, label="Total Energy (N-sec)")
+    ax2.plot(df["time_sec"], df["running_impulse"], color="#e65100", linewidth=2, label="Cumulative Energy (N-sec)")
     ax2.axhline(total_impulse, color="#bf360c", linestyle=":", label=f"Final Total: {total_impulse:.1f} N-sec")
     ax2.set_ylabel("Impulse (N-sec)", fontsize=11)
     ax2.grid(True, linestyle=":", alpha=0.6)
     ax2.legend(loc="lower right")
     
-    # Plot 3: Temperatures
+    # Bottom Plot: Thermocouple heating curves (if sensors were recorded)
     if has_temp:
         ax3 = axes[2]
         ax3.plot(df["time_sec"], df["temp_nozzle_f"], color="#c62828", label="Nozzle", linewidth=2)
@@ -163,7 +193,7 @@ def run_analysis(csv_file, save_folder=None):
         
     plt.tight_layout()
     
-    # Save chart
+    # Save the chart PNG
     out_dir = save_folder or "/Users/thoward/Documents/AIAA/BPL_Software/reports"
     os.makedirs(out_dir, exist_ok=True)
     base = os.path.splitext(os.path.basename(csv_file))[0]
@@ -172,7 +202,9 @@ def run_analysis(csv_file, save_folder=None):
     plt.close()
     print(f"Saved chart to: {out_img}")
     
-    # 5. Export to Excel format (.xlsx)
+    # -------------------------------------------------------------
+    # Step 5: Export formatted Excel workbook (.xlsx)
+    # -------------------------------------------------------------
     out_excel = os.path.join(out_dir, f"{base}_summary.xlsx")
     summary_data = {
         "Metric": [
@@ -208,13 +240,12 @@ def run_analysis(csv_file, save_folder=None):
     }
     summary_df = pd.DataFrame(summary_data)
     
-    # Prepare export timeseries
     export_cols = ["time_sec", "clean_thrust_lbf", "smooth_thrust_lbf", "thrust_newtons", "running_impulse"]
     if has_temp:
         export_cols.extend(["temp_casing_f", "temp_nozzle_f", "temp_ambient_f"])
         
     time_df = df[export_cols].copy()
-    time_df.rename(columns={
+    time_df = time_df.rename(columns={
         "time_sec": "Time (s)",
         "clean_thrust_lbf": "Thrust (lbf)",
         "smooth_thrust_lbf": "Filtered Thrust (lbf)",
@@ -223,7 +254,7 @@ def run_analysis(csv_file, save_folder=None):
         "temp_casing_f": "Casing Temp (°F)",
         "temp_nozzle_f": "Nozzle Temp (°F)",
         "temp_ambient_f": "Ambient Temp (°F)"
-    }, inplace=True)
+    })
     
     with pd.ExcelWriter(out_excel, engine="openpyxl") as writer:
         summary_df.to_excel(writer, sheet_name="Test Summary", index=False)
@@ -233,13 +264,14 @@ def run_analysis(csv_file, save_folder=None):
     return out_img, out_excel
 
 def main():
-    parser = argparse.ArgumentParser(description="Process test stand CSV files")
+    parser = argparse.ArgumentParser(description="Process rocket motor test stand CSV files")
     parser.add_argument("file", nargs="?", help="CSV file to process (defaults to newest in data/)")
     args = parser.parse_args()
     
     if args.file:
         target = args.file
     else:
+        # If no file is specified, pick the newest CSV in the data folder
         files = glob.glob("/Users/thoward/Documents/AIAA/BPL_Software/data/*.csv")
         if not files:
             print("No CSV files found in data/. Run simulator.py first.")
