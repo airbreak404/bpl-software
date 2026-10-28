@@ -1,0 +1,61 @@
+{
+  "title": "BPL Static Rocket Motor Test Stand",
+  "separator": ",",
+  "frameStart": "",
+  "frameEnd": "\n",
+  "groups": [
+    {
+      "title": "Thrust Measurement",
+      "widget": "multiplot",
+      "datasets": [
+        {
+          "title": "Timestamp",
+          "units": "ms",
+          "widget": "",
+          "graph": false
+        },
+        {
+          "title": "Thrust",
+          "units": "lbf",
+          "widget": "gauge",
+          "graph": true,
+          "min": 0,
+          "max": 250,
+          "alarm": 220
+        }
+      ]
+    },
+    {
+      "title": "Thermal Monitoring",
+      "widget": "multiplot",
+      "datasets": [
+        {
+          "title": "Casing Temp",
+          "units": "°F",
+          "widget": "gauge",
+          "graph": true,
+          "min": 50,
+          "max": 400,
+          "alarm": 350
+        },
+        {
+          "title": "Nozzle Temp",
+          "units": "°F",
+          "widget": "gauge",
+          "graph": true,
+          "min": 50,
+          "max": 600,
+          "alarm": 500
+        },
+        {
+          "title": "Ambient Temp",
+          "units": "°F",
+          "widget": "bar",
+          "graph": true,
+          "min": 20,
+          "max": 120
+        }
+      ]
+    }
+  ]
+}

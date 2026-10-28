@@ -59,12 +59,11 @@ def run_analysis(csv_file, save_folder=None):
     print(f"Data points: {len(df):,} | Sampling speed: {hz:.0f} readings/sec | Total log time: {df['time_sec'].iloc[-1]:.2f}s")
     
     # 1. Zero out the scale (tare)
-    # Grab the first half second while the motor is just sitting there waiting to fire
     idle_points = df[df["time_sec"] < 0.5]
     tare_offset = idle_points["thrust_lbf"].median() if len(idle_points) > 5 else 0.0
     df["clean_thrust_lbf"] = (df["thrust_lbf"] - tare_offset).clip(lower=0.0)
     
-    # Smooth out electronic noise with a quick rolling average
+    # Smooth out electronic noise with a rolling average
     df["smooth_thrust_lbf"] = df["clean_thrust_lbf"].rolling(window=5, min_periods=1, center=True).mean()
     
     # 2. Find when the motor actually burned
@@ -98,6 +97,8 @@ def run_analysis(csv_file, save_folder=None):
     df["running_impulse"] = np.cumsum(df["thrust_newtons"] * dt)
     
     has_temp = "temp_casing_f" in df.columns and "temp_nozzle_f" in df.columns
+    max_casing = df["temp_casing_f"].max() if has_temp else 0.0
+    max_nozzle = df["temp_nozzle_f"].max() if has_temp else 0.0
     
     # Print clean results
     print("\n" + "=" * 50)
@@ -109,8 +110,8 @@ def run_analysis(csv_file, save_folder=None):
     print(f"Total Impulse:     {total_impulse:.1f} N-sec (total energy delivered)")
     print(f"Motor Class:       {motor_class}")
     if has_temp:
-        print(f"Max Casing Temp:   {df['temp_casing_f'].max():.1f} °F")
-        print(f"Max Nozzle Temp:   {df['temp_nozzle_f'].max():.1f} °F")
+        print(f"Max Casing Temp:   {max_casing:.1f} °F")
+        print(f"Max Nozzle Temp:   {max_nozzle:.1f} °F")
     print("=" * 50 + "\n")
     
     # 4. Draw plots
@@ -162,16 +163,74 @@ def run_analysis(csv_file, save_folder=None):
         
     plt.tight_layout()
     
-    # Save graph
+    # Save chart
     out_dir = save_folder or "/Users/thoward/Documents/AIAA/BPL_Software/reports"
     os.makedirs(out_dir, exist_ok=True)
     base = os.path.splitext(os.path.basename(csv_file))[0]
     out_img = os.path.join(out_dir, f"{base}_report.png")
     plt.savefig(out_img, dpi=300)
     plt.close()
-    
     print(f"Saved chart to: {out_img}")
-    return out_img
+    
+    # 5. Export to Excel format (.xlsx)
+    out_excel = os.path.join(out_dir, f"{base}_summary.xlsx")
+    summary_data = {
+        "Metric": [
+            "Test File",
+            "Burn Time (s)",
+            "Ignition Time (s)",
+            "Burnout Time (s)",
+            "Peak Thrust (lbf)",
+            "Peak Thrust (N)",
+            "Average Thrust (lbf)",
+            "Average Thrust (N)",
+            "Total Impulse (N·s)",
+            "Motor Classification",
+            "Max Casing Temp (°F)",
+            "Max Nozzle Temp (°F)",
+            "Sampling Rate (Hz)"
+        ],
+        "Value": [
+            os.path.basename(csv_file),
+            round(burn_time, 3),
+            round(t_start, 2),
+            round(t_end, 2),
+            round(peak_force, 2),
+            round(peak_newtons, 1),
+            round(avg_force, 2),
+            round(avg_newtons, 1),
+            round(total_impulse, 1),
+            motor_class,
+            round(max_casing, 1) if has_temp else "N/A",
+            round(max_nozzle, 1) if has_temp else "N/A",
+            round(hz, 0)
+        ]
+    }
+    summary_df = pd.DataFrame(summary_data)
+    
+    # Prepare export timeseries
+    export_cols = ["time_sec", "clean_thrust_lbf", "smooth_thrust_lbf", "thrust_newtons", "running_impulse"]
+    if has_temp:
+        export_cols.extend(["temp_casing_f", "temp_nozzle_f", "temp_ambient_f"])
+        
+    time_df = df[export_cols].copy()
+    time_df.rename(columns={
+        "time_sec": "Time (s)",
+        "clean_thrust_lbf": "Thrust (lbf)",
+        "smooth_thrust_lbf": "Filtered Thrust (lbf)",
+        "thrust_newtons": "Thrust (N)",
+        "running_impulse": "Cumulative Impulse (N·s)",
+        "temp_casing_f": "Casing Temp (°F)",
+        "temp_nozzle_f": "Nozzle Temp (°F)",
+        "temp_ambient_f": "Ambient Temp (°F)"
+    }, inplace=True)
+    
+    with pd.ExcelWriter(out_excel, engine="openpyxl") as writer:
+        summary_df.to_excel(writer, sheet_name="Test Summary", index=False)
+        time_df.to_excel(writer, sheet_name="Raw Data", index=False)
+        
+    print(f"Saved Excel summary workbook to: {out_excel}")
+    return out_img, out_excel
 
 def main():
     parser = argparse.ArgumentParser(description="Process test stand CSV files")
