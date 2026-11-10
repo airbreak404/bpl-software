@@ -1,19 +1,42 @@
-# Bronco Propulsion Laboratory (BPL) - Software & DAQ
+# Bronco Propulsion Laboratory (BPL) — Avionics & Software DAQ
 
-WMU AIAA Pegasus Chapter  
-Subteam: Software  
-Team Members: Tyler Howard, Sarah Marcinkiewicz, Sofia Martinez
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![Hardware](https://img.shields.io/badge/hardware-ESP32--S3-green.svg)](https://www.espressif.com/en/products/socs/esp32-s3)
+[![Protocol](https://img.shields.io/badge/wireless-ESP--NOW-purple.svg)](https://www.espressif.com/en/solutions/low-power-solutions/esp-now)
+[![License](https://img.shields.io/badge/team-WMU%20AIAA-orange.svg)](https://github.com/airbreak404/bpl-software)
+
+Official software, firmware, and ground station data acquisition system for the **Bronco Propulsion Laboratory (BPL) Static Test Stand** at Western Michigan University.
 
 ---
 
-## What is this?
+## What Does This Project Do?
 
-Software and test tools for the Bronco Propulsion Laboratory (BPL) Static Test Stand at Western Michigan University.
+When we test a solid rocket motor on the test stand, the motor fires for about 1.5 to 2.5 seconds. Our avionics and software system handles three critical jobs:
 
-During a static fire test, the motor is clamped down into the test stand and fired for about 1.5 to 2.5 seconds. Our setup handles three main jobs:
-1. **Reads the sensors:** An ESP32-S3 reads the load cell scale and three thermocouple temperature probes 200 times per second.
-2. **Logs everything:** Saves every reading to an onboard MicroSD card so nothing gets lost, and sends live telemetry over Wi-Fi back to a laptop.
-3. **Processes the data:** Python scripts parse the test CSV, calculate peak thrust, average thrust, burn time, total impulse, and motor classification, and export clean graphs and an Excel summary.
+1. **High-Speed Sensor Reading (200 Hz):** Reads the thrust scale (load cell) and three temperature sensors 200 times every second.
+2. **Dual-Board Wireless Telemetry:** An onboard ESP32-S3 logs all raw data to a MicroSD card and beams real-time data through the air via **ESP-NOW** to a receiver board plugged into the mission laptop.
+3. **Automated Data Processing:** Python software zeroes the scale, isolates the rocket burn window, calculates peak thrust, average thrust, burn time, and total impulse, and exports clean graphs and Excel reports in seconds.
+
+---
+
+## System Architecture
+
+```
+┌───────────────────────────────────────┐                 ┌───────────────────────────────────────┐
+│     STAND AVIONICS (Transmitter)      │                 │     GROUND STATION (Receiver)         │
+│     ESP32-S3 @ Static Test Stand      │                 │     ESP32-S3 @ Mission Laptop         │
+├───────────────────────────────────────┤                 ├───────────────────────────────────────┤
+│ • 24-bit ADC Load Cell (Thrust Force) │   ESP-NOW 2.4G  │ • Catches wireless telemetry packets  │
+│ • 3x MAX31856 Probes (Temperatures)   │ ───────────────>│ • Streams CSV lines over USB Serial   │
+│ • High-Speed MicroSD Logger (SDMMC)   │   (Long Range)  └───────────────────┬───────────────────┘
+│ • Built-in J425R Simulation Mode      │                                     │ USB (115200 baud)
+└───────────────────────────────────────┘                                     v
+                                                          ┌───────────────────────────────────────┐
+                                                          │ ground_station.py & Serial Studio     │
+                                                          │ • Live terminal telemetry stream      │
+                                                          │ • Real-time dials, gauges, and CSV log│
+                                                          └───────────────────────────────────────┘
+```
 
 ---
 
@@ -21,55 +44,81 @@ During a static fire test, the motor is clamped down into the test stand and fir
 
 ```
 BPL_Software/
-├── README.md                          # Subteam documentation and instructions
-├── requirements.txt                   # Python dependencies (pip install -r requirements.txt)
-├── processor.py                       # Post-test analysis (graphs + Excel summaries)
-├── simulator.py                       # Test data generator (J425R, J435WS, J450DM, KNSB)
-├── ground_station.py                  # Live telemetry receiver & terminal dashboard
-├── bpl_serial_studio_dashboard.json   # Serial Studio real-time visualizer config
-├── docs/                              # PDR presentation, notes, and research
-│   ├── BPL_Software_PDR.pptx          # Official Software PDR slide deck
-│   ├── PDR_Talking_Points.md          # 1-page quick reference sheet for PDR
-│   ├── Data_Processing_Research.docx  # Subteam research & ESP32 migration notes
-│   └── Learning_Resources_and_Links.md# Curated rocketry, DAQ & Python guides
+├── ground_station.py                  # Live telemetry monitor (USB serial & Wi-Fi bridge)
+├── processor.py                       # Automated data analysis, thrust curves & Excel reports
+├── simulator.py                       # Simulated rocket burn generator (J425R, J435WS, KNSB)
+├── calibrate.py                       # Interactive load cell scale calibration tool
+├── run_live_monitor.command           # Double-clickable macOS launcher for the ground station
+├── requirements.txt                   # Python package dependencies
+├── bpl_serial_studio_dashboard.json   # Serial Studio real-time visualizer layout
 ├── firmware/
-│   └── bpl_test_stand_esp32.ino       # Dual-core ESP32-S3 firmware (KiCad Rev 2)
-├── data/                              # Test run CSV logs
-└── reports/                           # Output PNG charts and Excel workbooks
+│   ├── README.md                      # Flashing guide & KiCad Rev 2 pinout documentation
+│   ├── bpl_receiver_esp32/            # Board 1: Ground receiver firmware
+│   └── bpl_test_stand_esp32/          # Board 2: Stand transmitter & simulation firmware
+├── data/                              # Sample and recorded test CSV logs
+├── reports/                           # Output PNG analysis graphs and Excel workbooks
+└── docs/                              # PDR slides, test day checklists, and architecture docs
 ```
 
 ---
 
-## Setup & Usage
+## Quickstart Guide
 
-### 1. Set up Python environment
+### 1. Set Up Python Environment
 ```bash
+# Clone the repository
+git clone https://github.com/airbreak404/bpl-software.git
+cd bpl-software
+
+# Set up virtual environment and install dependencies
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Generate simulated test data
-To test changes at home without needing a live rocket motor:
-```bash
-python simulator.py --motor J425R
-```
-This drops a simulated test run into `data/` (with realistic ignition curve, combustion flutter, and thermocouple heating).
+### 2. Live Desk Testing with the Two ESP32 Boards
+No physical rocket test stand built yet? No problem! The firmware includes a built-in bench simulation mode:
 
-### 3. Run post-test analysis
+1. **Plug Board 1 (Receiver)** into your laptop via USB.
+2. **Power Board 2 (Transmitter)** with any USB charger, second port, or power bank.
+3. Launch the ground station:
+   ```bash
+   python ground_station.py
+   ```
+   *(Or double-click `run_live_monitor.command` on macOS)*
+4. The receiver will catch the simulated Aerotech J425R motor burn through the air at 200 Hz, display live status in terminal, and log everything to `data/telemetry_<timestamp>.csv`.
+
+### 3. Generate Analysis Graphs & Reports
+Run the processor on any captured test CSV:
 ```bash
 python processor.py
 ```
-Picks up the newest test in `data/`, zeroes out the scale baseline, finds the burn window, calculates total impulse, and outputs:
-* Summary plot: `reports/*_report.png`
-* Formatted spreadsheet: `reports/*_summary.xlsx`
+This automatically:
+* Tares the scale baseline weight.
+* Identifies ignition, peak thrust, and burnout timestamps.
+* Calculates total impulse and motor classification (e.g. `J Class`).
+* Generates a high-resolution graph (`reports/*_report.png`) and formatted spreadsheet (`reports/*_summary.xlsx`).
 
-### 4. Run live ground station
-```bash
-# Terminal mock demo:
-python ground_station.py --mock
+---
 
-# Live test day listening mode (UDP 4242):
-python ground_station.py --port 4242
-```
-Or open [Serial Studio](https://serial-studio.github.io/) and load `bpl_serial_studio_dashboard.json` for live dials and graphs.
+## Hardware Pinout (KiCad Schematic Rev 2)
+
+| Subsystem | Sensor / IC | Interface | ESP32-S3 Pins |
+| :--- | :--- | :--- | :--- |
+| **Thrust Measurement** | TI ADS1256 (24-bit ADC) | SPI2 (FSPI) | `CS: 10`, `MOSI: 11`, `SCLK: 12`, `MISO: 13`, `DRDY: 14` |
+| **Casing Temperature** | MAX31856 Thermocouple | SPI3 (HSPI) | `CS: 7`, `SCK: 4`, `MISO: 5`, `MOSI: 6` |
+| **Forward Closure Temp** | MAX31856 Thermocouple | SPI3 (HSPI) | `CS: 15`, `SCK: 4`, `MISO: 5`, `MOSI: 6` |
+| **Nozzle Temperature** | MAX31856 Thermocouple | SPI3 (HSPI) | `CS: 16`, `SCK: 4`, `MISO: 5`, `MOSI: 6` |
+| **Onboard Data Backup** | MicroSD Card Logger | 4-bit SDMMC | `CLK: 38`, `CMD: 39`, `D0: 40`, `D1: 41`, `D2: 42`, `D3: 2` |
+| **Status Indicator** | WS2812 RGB LED | Single-Wire | `GPIO 48` |
+
+---
+
+## Team & Credits
+
+**Western Michigan University — AIAA Pegasus Chapter**  
+* **Software Subteam:** Tyler Howard, Sarah Marcinkiewicz, Sofia Martinez
+* **Electronics / Hardware Subteam:** David Insignares
+* **Project Lead:** Alex Fischer
+
+For questions or contributions, submit a pull request or open an issue on [GitHub](https://github.com/airbreak404/bpl-software).

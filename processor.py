@@ -20,6 +20,42 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # 1 pound of force (lbf) = 4.44822 Newtons (N)
 LBF_TO_NEWTONS = 4.4482216
 
+# Certified manufacturer motor specifications (from AeroTech / ThrustCurve.org)
+CERTIFIED_SPECS = {
+    "J425R": {
+        "name": "Aerotech J425R-14A (Redline)",
+        "burn_time": 1.6,
+        "peak_force_lbf": 102.0,
+        "avg_force_lbf": 66.8,
+        "total_impulse_ns": 457.0,
+        "motor_class": "J",
+    },
+    "J435WS": {
+        "name": "Aerotech J435WS DMS (White Lightning)",
+        "burn_time": 1.7,
+        "peak_force_lbf": 156.5,
+        "avg_force_lbf": 102.4,
+        "total_impulse_ns": 774.0,
+        "motor_class": "J",
+    },
+    "J450DM": {
+        "name": "Aerotech J450DM-14A (Dark Matter)",
+        "burn_time": 2.4,
+        "peak_force_lbf": 125.0,
+        "avg_force_lbf": 95.0,
+        "total_impulse_ns": 1098.0,
+        "motor_class": "J",
+    },
+    "KNSB-38": {
+        "name": "BPL 38mm KNSB (Sugar Motor)",
+        "burn_time": 1.0,
+        "peak_force_lbf": 85.0,
+        "avg_force_lbf": 55.0,
+        "total_impulse_ns": 245.0,
+        "motor_class": "H",
+    }
+}
+
 # Standard rocket motor letter classes (A through M) based on total impulse in Newton-seconds.
 # In rocketry, every letter has double the total push energy of the letter before it.
 MOTOR_CLASSES = [
@@ -51,12 +87,21 @@ def find_motor_letter(impulse_ns):
         return "< A class"
     return "> M class"
 
-def run_analysis(csv_file, save_folder=None):
+def run_analysis(csv_file, save_folder=None, motor_choice=None):
     if not os.path.exists(csv_file):
         print(f"Error: Cannot find file '{csv_file}'")
         return None
         
     print(f"\nAnalyzing test file: {os.path.basename(csv_file)}")
+    
+    # Identify target motor spec for comparison
+    detected_motor = motor_choice
+    if not detected_motor:
+        for m in CERTIFIED_SPECS.keys():
+            if m in os.path.basename(csv_file):
+                detected_motor = m
+                break
+    spec = CERTIFIED_SPECS.get(detected_motor)
     
     # Read the raw CSV file into a table
     df = pd.read_csv(csv_file)
@@ -142,56 +187,96 @@ def run_analysis(csv_file, save_folder=None):
     if has_temp:
         print(f"Max Casing Temp:   {max_casing:.1f} °F")
         print(f"Max Nozzle Temp:   {max_nozzle:.1f} °F")
+        
+    p_err = t_err = i_err = 0.0
+    if spec:
+        p_err = ((peak_force - spec["peak_force_lbf"]) / spec["peak_force_lbf"]) * 100.0
+        i_err = ((total_impulse - spec["total_impulse_ns"]) / spec["total_impulse_ns"]) * 100.0
+        t_err = ((burn_time - spec["burn_time"]) / spec["burn_time"]) * 100.0
+        print("-" * 50)
+        print(f"      MANUFACTURER SPEC COMPARISON ({detected_motor})")
+        print("-" * 50)
+        print(f"Peak Force:    Measured {peak_force:6.2f} lbs | Spec {spec['peak_force_lbf']:6.2f} lbs ({p_err:+.1f}%)")
+        print(f"Burn Time:     Measured {burn_time:6.3f} s   | Spec {spec['burn_time']:6.3f} s   ({t_err:+.1f}%)")
+        print(f"Total Impulse: Measured {total_impulse:6.1f} N·s | Spec {spec['total_impulse_ns']:6.1f} N·s ({i_err:+.1f}%)")
     print("=" * 50 + "\n")
     
     # -------------------------------------------------------------
-    # Step 4: Plot the graphs
+    # Step 4: Plot the graphs (Styled with sleek dark/pink theme)
     # -------------------------------------------------------------
-    fig, axes = plt.subplots(3 if has_temp else 2, 1, figsize=(10, 8 if has_temp else 6), sharex=True)
+    plt.style.use("dark_background")
+    fig, axes = plt.subplots(3 if has_temp else 2, 1, figsize=(11, 8.5 if has_temp else 6.5), sharex=True)
+    
+    # Palette definition (Cosmic Pink / Synthwave Aero)
+    bg_dark = "#13111c"
+    card_dark = "#1c1829"
+    grid_color = "#322947"
+    pink_hot = "#ff2a85"
+    pink_soft = "#f472b6"
+    pink_glow = "#fbcfe8"
+    purple_accent = "#c084fc"
+    magenta_accent = "#e879f9"
+    coral_pink = "#fb7185"
+    text_light = "#fdf2f8"
+    
+    fig.patch.set_facecolor(bg_dark)
+    
+    for ax in axes:
+        ax.set_facecolor(card_dark)
+        ax.grid(True, linestyle="--", linewidth=0.6, color=grid_color, alpha=0.7)
+        for spine in ax.spines.values():
+            spine.set_color(grid_color)
+            spine.set_linewidth(1.0)
+        ax.tick_params(colors="#cbd5e1", labelsize=9)
     
     # Top Plot: Force vs Time
     ax1 = axes[0]
-    ax1.plot(df["time_sec"], df["clean_thrust_lbf"], color="#90caf9", label="Raw Sensor Readings", alpha=0.6, linewidth=1)
-    ax1.plot(df["time_sec"], df["smooth_thrust_lbf"], color="#0d47a1", label="Filtered Curve", linewidth=2)
-    ax1.fill_between(burn_df["time_sec"], burn_df["smooth_thrust_lbf"], color="#1976d2", alpha=0.2, label="Burn Window")
+    ax1.plot(df["time_sec"], df["clean_thrust_lbf"], color=pink_soft, label="Raw Sensor Readings", alpha=0.35, linewidth=1.0)
+    ax1.plot(df["time_sec"], df["smooth_thrust_lbf"], color=pink_hot, label="Filtered Thrust Curve", linewidth=2.4)
+    ax1.fill_between(burn_df["time_sec"], burn_df["smooth_thrust_lbf"], color=pink_hot, alpha=0.22, label="Active Burn Window")
     
-    # Callout box pointing right at the peak force
+    # Peak Force Callout Box
     peak_idx = df["smooth_thrust_lbf"].idxmax()
     peak_t = df["time_sec"].iloc[peak_idx]
-    ax1.annotate(f"Peak: {peak_force:.1f} lbs ({peak_newtons:.0f} N)",
+    ax1.annotate(f"★ Peak: {peak_force:.1f} lbs ({peak_newtons:.0f} N)",
                  xy=(peak_t, peak_force),
-                 xytext=(peak_t + 0.3, peak_force * 0.88),
-                 arrowprops=dict(facecolor="black", shrink=0.05, width=1.2, headwidth=6),
-                 bbox=dict(boxstyle="round,pad=0.3", facecolor="#fff3e0", edgecolor="#ff9800"),
-                 fontweight="bold", fontsize=10)
+                 xytext=(peak_t + 0.35, peak_force * 0.90),
+                 arrowprops=dict(facecolor=pink_hot, edgecolor=pink_glow, shrink=0.08, width=1.5, headwidth=6),
+                 bbox=dict(boxstyle="round,pad=0.4", facecolor="#2b1a38", edgecolor=pink_hot, linewidth=1.5),
+                 fontweight="bold", fontsize=10, color=text_light)
                  
-    ax1.axvline(t_start, color="green", linestyle="--", alpha=0.8, label=f"Ignition ({t_start:.2f}s)")
-    ax1.axvline(t_end, color="red", linestyle="--", alpha=0.8, label=f"Burnout ({t_end:.2f}s)")
-    ax1.set_ylabel("Thrust (lbs)", fontsize=11)
-    ax1.set_title(f"BPL Static Fire Test — {os.path.basename(csv_file)}", fontsize=12, fontweight="bold")
-    ax1.grid(True, linestyle=":", alpha=0.6)
-    ax1.legend(loc="upper right")
+    ax1.axvline(t_start, color=purple_accent, linestyle="--", alpha=0.85, linewidth=1.4, label=f"Ignition ({t_start:.2f}s)")
+    ax1.axvline(t_end, color=coral_pink, linestyle="--", alpha=0.85, linewidth=1.4, label=f"Burnout ({t_end:.2f}s)")
+    if spec:
+        ax1.axhline(spec["peak_force_lbf"], color="#f43f5e", linestyle=":", linewidth=1.6, alpha=0.9,
+                    label=f"Certified Target ({spec['peak_force_lbf']:.1f} lbs)")
+    ax1.set_ylabel("Thrust (lbs)", fontsize=11, fontweight="bold", color=text_light)
+    ax1.set_title(f"BPL Static Fire Telemetry Analysis — {os.path.basename(csv_file)}", 
+                  fontsize=13, fontweight="bold", pad=12, color=pink_glow)
+    legend1 = ax1.legend(loc="upper right", framealpha=0.8, facecolor=card_dark, edgecolor=grid_color)
+    plt.setp(legend1.get_texts(), color=text_light)
     
-    # Middle Plot: Cumulative Impulse (how total energy climbed over time)
+    # Middle Plot: Cumulative Impulse
     ax2 = axes[1]
-    ax2.plot(df["time_sec"], df["running_impulse"], color="#e65100", linewidth=2, label="Cumulative Energy (N-sec)")
-    ax2.axhline(total_impulse, color="#bf360c", linestyle=":", label=f"Final Total: {total_impulse:.1f} N-sec")
-    ax2.set_ylabel("Impulse (N-sec)", fontsize=11)
-    ax2.grid(True, linestyle=":", alpha=0.6)
-    ax2.legend(loc="lower right")
+    ax2.plot(df["time_sec"], df["running_impulse"], color=magenta_accent, linewidth=2.2, label="Cumulative Energy (N·s)")
+    ax2.fill_between(df["time_sec"], df["running_impulse"], color=magenta_accent, alpha=0.15)
+    ax2.axhline(total_impulse, color=purple_accent, linestyle=":", linewidth=1.5, label=f"Final Impulse: {total_impulse:.1f} N·s ({motor_class})")
+    ax2.set_ylabel("Impulse (N·s)", fontsize=11, fontweight="bold", color=text_light)
+    legend2 = ax2.legend(loc="lower right", framealpha=0.8, facecolor=card_dark, edgecolor=grid_color)
+    plt.setp(legend2.get_texts(), color=text_light)
     
-    # Bottom Plot: Thermocouple heating curves (if sensors were recorded)
+    # Bottom Plot: Heating curves
     if has_temp:
         ax3 = axes[2]
-        ax3.plot(df["time_sec"], df["temp_nozzle_f"], color="#c62828", label="Nozzle", linewidth=2)
-        ax3.plot(df["time_sec"], df["temp_casing_f"], color="#ef6c00", label="Casing", linewidth=2)
-        ax3.plot(df["time_sec"], df["temp_ambient_f"], color="#757575", linestyle="--", label="Ambient", alpha=0.7)
-        ax3.set_ylabel("Temp (°F)", fontsize=11)
-        ax3.set_xlabel("Time (seconds)", fontsize=11)
-        ax3.grid(True, linestyle=":", alpha=0.6)
-        ax3.legend(loc="upper left")
+        ax3.plot(df["time_sec"], df["temp_nozzle_f"], color=pink_hot, label=f"Nozzle (Max {max_nozzle:.1f}°F)", linewidth=2.2)
+        ax3.plot(df["time_sec"], df["temp_casing_f"], color=coral_pink, label=f"Casing (Max {max_casing:.1f}°F)", linewidth=2.0)
+        ax3.plot(df["time_sec"], df["temp_ambient_f"], color="#94a3b8", linestyle="--", label="Ambient", alpha=0.7)
+        ax3.set_ylabel("Temp (°F)", fontsize=11, fontweight="bold", color=text_light)
+        ax3.set_xlabel("Time (seconds)", fontsize=11, fontweight="bold", color=text_light)
+        legend3 = ax3.legend(loc="upper left", framealpha=0.8, facecolor=card_dark, edgecolor=grid_color)
+        plt.setp(legend3.get_texts(), color=text_light)
     else:
-        ax2.set_xlabel("Time (seconds)", fontsize=11)
+        ax2.set_xlabel("Time (seconds)", fontsize=11, fontweight="bold", color=text_light)
         
     plt.tight_layout()
     
@@ -240,6 +325,26 @@ def run_analysis(csv_file, save_folder=None):
             round(hz, 0)
         ]
     }
+    if spec:
+        summary_data["Metric"].extend([
+            "Certified Spec Target",
+            "Spec Peak Thrust (lbf)",
+            "Peak Thrust Error (%)",
+            "Spec Burn Time (s)",
+            "Burn Time Error (%)",
+            "Spec Total Impulse (N·s)",
+            "Total Impulse Error (%)"
+        ])
+        summary_data["Value"].extend([
+            spec["name"],
+            spec["peak_force_lbf"],
+            f"{p_err:+.1f}%",
+            spec["burn_time"],
+            f"{t_err:+.1f}%",
+            spec["total_impulse_ns"],
+            f"{i_err:+.1f}%"
+        ])
+
     summary_df = pd.DataFrame(summary_data)
     
     export_cols = ["time_sec", "clean_thrust_lbf", "smooth_thrust_lbf", "thrust_newtons", "running_impulse"]
@@ -268,6 +373,7 @@ def run_analysis(csv_file, save_folder=None):
 def main():
     parser = argparse.ArgumentParser(description="Process rocket motor test stand CSV files")
     parser.add_argument("file", nargs="?", help="CSV file to process (defaults to newest in data/)")
+    parser.add_argument("--motor", choices=["J425R", "J435WS", "J450DM", "KNSB-38"], default=None, help="Motor spec to compare against")
     args = parser.parse_args()
     
     if args.file:
@@ -280,7 +386,7 @@ def main():
             return
         target = max(files, key=os.path.getctime)
         
-    run_analysis(target)
+    run_analysis(target, motor_choice=args.motor)
 
 if __name__ == "__main__":
     main()
