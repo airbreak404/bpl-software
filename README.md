@@ -65,27 +65,38 @@ BPL_Software/
 ## Quickstart Guide
 
 ### 1. Set Up Python Environment
-```bash
-# Clone the repository
+
+**Windows:**
+```cmd
 git clone https://github.com/airbreak404/bpl-software.git
 cd bpl-software
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+*(Or simply double-click **`run_live_monitor.bat`**)*
 
-# Set up virtual environment and install dependencies
+**macOS / Linux:**
+```bash
+git clone https://github.com/airbreak404/bpl-software.git
+cd bpl-software
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
+*(Or simply double-click **`run_live_monitor.command`**)*
+
+---
 
 ### 2. Live Desk Testing with the Two ESP32 Boards
 No physical rocket test stand built yet? No problem! The firmware includes a built-in bench simulation mode:
 
 1. **Plug Board 1 (Receiver)** into your laptop via USB.
+   * *Windows automatically assigns it a COM port (`COM3`, `COM4`, etc.). The software auto-detects it!*
 2. **Power Board 2 (Transmitter)** with any USB charger, second port, or power bank.
 3. Launch the ground station:
-   ```bash
-   python ground_station.py
-   ```
-   *(Or double-click `run_live_monitor.command` on macOS)*
+   * **Windows:** Double-click `run_live_monitor.bat` (or run `python ground_station.py`)
+   * **macOS:** Double-click `run_live_monitor.command` (or run `python ground_station.py`)
 4. The receiver will catch the simulated Aerotech J425R motor burn through the air at 200 Hz, display live status in terminal, and log everything to `data/telemetry_<timestamp>.csv`.
 
 ### 3. Generate Analysis Graphs & Reports

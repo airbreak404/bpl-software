@@ -15,7 +15,36 @@ import argparse
 import random
 import statistics
 
+# Enable ANSI colors on Windows terminals
+if os.name == "nt":
+    os.system("")
+
+try:
+    import serial
+    import serial.tools.list_ports
+    SERIAL_AVAILABLE = True
+except ImportError:
+    SERIAL_AVAILABLE = False
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def find_esp32_serial_port():
+    """Finds the connected ESP32 serial port on Windows, macOS, or Linux."""
+    if not SERIAL_AVAILABLE:
+        return None
+    ports = list(serial.tools.list_ports.comports())
+    if not ports:
+        return None
+    for p in ports:
+        if p.vid in [0x1A86, 0x303A, 0x10C4, 0x0403]:
+            return p.device
+    for p in ports:
+        combined = f"{p.description or ''} {p.hwid or ''} {p.device.lower()}".lower()
+        if any(t in combined for t in ["espressif", "ch34", "cp210", "ftdi", "uart", "usbmodem"]):
+            return p.device
+    if len(ports) == 1:
+        return ports[0].device
+    return None
 
 def get_mock_reading(applied_weight_lbs=0.0):
     """Simulates raw 24-bit ADS1256 ADC counts with realistic thermal/electronic noise."""
@@ -166,13 +195,19 @@ def run_calibration(mock=False, port=None, baud=115200):
 def main():
     parser = argparse.ArgumentParser(description="BPL Static Stand Load Cell Calibration Tool")
     parser.add_argument("--mock", action="store_true", help="Run simulated calibration without physical stand")
-    parser.add_argument("--port", type=str, default=None, help="Serial port (e.g. /dev/cu.usbserial-*)")
+    parser.add_argument("--port", type=str, default=None, help="Serial port (auto-detected if omitted)")
     parser.add_argument("--baud", type=int, default=115200, help="Baud rate (default: 115200)")
     args = parser.parse_args()
 
-    # Default to mock mode if no serial port is specified
-    is_mock = args.mock or (args.port is None)
-    run_calibration(mock=is_mock, port=args.port, baud=args.baud)
+    port = args.port or (None if args.mock else find_esp32_serial_port())
+    is_mock = args.mock or (port is None)
+    
+    if not is_mock and port:
+        print(f"Auto-detected ESP32 on serial port: {port}")
+    elif not args.mock and port is None:
+        print("No physical ESP32 detected. Running in simulated (mock) mode.")
+        
+    run_calibration(mock=is_mock, port=port, baud=args.baud)
 
 if __name__ == "__main__":
     main()

@@ -19,25 +19,40 @@ try:
 except ImportError:
     SERIAL_AVAILABLE = False
 
+# Enable ANSI colors on Windows terminals
+if os.name == "nt":
+    os.system("")
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def find_esp32_serial_port():
-    """Finds the USB serial port for the ESP32 receiver on your computer."""
+    """Finds the USB serial port for the ESP32 receiver on your computer (Windows, macOS, Linux)."""
     if not SERIAL_AVAILABLE:
         return None
 
-    # Search known macOS and Linux device patterns
-    ports = serial.tools.list_ports.comports()
-    for port in ports:
-        name = port.device
-        desc = (port.description or "").lower()
-        # Look for typical USB-serial chips or macOS USB modem devices
-        if any(term in desc for term in ["espressif", "usb", "uart", "cp210", "ch340", "ftdi"]):
-            return name
-        if "usbmodem" in name or "usbserial" in name or "wchusbserial" in name:
-            return name
+    ports = list(serial.tools.list_ports.comports())
+    if not ports:
+        return None
 
-    # Fallback direct filesystem glob on macOS
+    # 1. Match by Vendor/Product ID (most robust cross-platform for Windows & Mac)
+    # WCH CH342/CH343: VID 0x1A86 (6790), Espressif: VID 0x303A, CP210x: VID 0x10C4, FTDI: VID 0x0403
+    for p in ports:
+        if p.vid in [0x1A86, 0x303A, 0x10C4, 0x0403]:
+            return p.device
+
+    # 2. Match by description/name keywords
+    for p in ports:
+        desc = (p.description or "").lower()
+        hwid = (p.hwid or "").lower()
+        combined = f"{desc} {hwid} {p.device.lower()}"
+        if any(term in combined for term in ["espressif", "ch34", "cp210", "ftdi", "uart", "usbmodem", "usbserial", "wchusbserial"]):
+            return p.device
+
+    # 3. If running on Windows (or only 1 serial device connected), auto-select it
+    if len(ports) == 1:
+        return ports[0].device
+
+    # 4. Fallback direct filesystem glob on macOS
     mac_ports = glob.glob("/dev/cu.usbmodem*") + glob.glob("/dev/cu.usbserial*") + glob.glob("/dev/cu.wchusbserial*")
     if mac_ports:
         return mac_ports[0]
