@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌸 BPL Mission Control — Rocket Stand Telemetry & Range Acquisition</title>
+  <script src="/chart.min.js"></script>
+  <style>
+    :root {
+      --bg-base: #06030c;
+      --bg-surface: rgba(18, 10, 32, 0.85);
+      --bg-surface-elevated: rgba(28, 15, 52, 0.92);
+      --border-glow: rgba(255, 42, 133, 0.32);
+      --border-active: rgba(255, 113, 206, 0.75);
+      --pink-primary: #ff2a85;
+      --pink-glow: #ff71ce;
+      --pink-soft: #f472b6;
+      --pink-deep: #be185d;
+      --cyan-cyber: #00f0ff;
+      --cyan-soft: #38bdf8;
+      --purple-accent: #a855f7;
+      --purple-glow: #c084fc;
+      --green-status: #10b981;
+      --amber-caution: #fbbf24;
+      --red-hazard: #f43f5e;
+      --text-bright: #ffffff;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(255, 42, 133, 0.16) 0%, transparent 60%),
+        radial-gradient(circle at 10% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 90% 70%, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      height: 100vh;
+      max-height: 100vh;
+      padding: 10px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Scanline overlay effect */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+      background-size: 100% 3px;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    /* Mission Control Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glow);
+      border-radius: 14px;
+      padding: 8px 18px;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 4px 24px rgba(255, 42, 133, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      bottom: -1px; left: 8%; right: 8%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--pink-glow), transparent);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-emblem {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, rgba(255, 42, 133, 0.25), rgba(168, 85, 247, 0.35));
+      border: 1.5px solid var(--pink-glow);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 14px rgba(255, 42, 133, 0.4);
+      animation: emblemPulse 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes emblemPulse {
+      0% { box-shadow: 0 0 10px rgba(255, 42, 133, 0.3); transform: scale(1); }
+      100% { box-shadow: 0 0 20px rgba(255, 113, 206, 0.6); transform: scale(1.02); }
+    }
+
+    .brand-titles h1 {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: -0.2px;
+      background: linear-gradient(135deg, #ffffff 10%, var(--pink-soft) 55%, var(--pink-glow) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-titles h1 span.subhead {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(255, 42, 133, 0.15);
+      border: 1px solid rgba(255, 42, 133, 0.4);
+      color: var(--pink-glow);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      font-weight: 800;
+      -webkit-text-fill-color: var(--pink-glow);
+    }
+
+    .brand-titles p {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    .header-center-telemetry {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .telemetry-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .telemetry-pill-lbl {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--pink-soft);
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .telemetry-pill-val {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--cyan-cyber);
+      letter-spacing: 0.4px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--pink-primary), #d91b68);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 3px 14px rgba(255, 42, 133, 0.35);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(255, 42, 133, 0.55);
+      border-color: #fff;
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--pink-glow);
+      color: #fff;
+    }
+
+    .btn-active-toggle {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--cyan-cyber);
+      color: var(--cyan-cyber);
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.3);
+    }
+
+    /* Mission Annunciator Banner */
+    .annunciator-bar {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .annun-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      padding: 6px 12px;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .annun-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; width: 3px; height: 100%;
+      background: var(--pink-primary);
+    }
+
+    .annun-card.active-cyan::before { background: var(--cyan-cyber); }
+    .annun-card.active-green::before { background: var(--green-status); }
+    .annun-card.active-purple::before { background: var(--purple-accent); }
+    .annun-card.active-amber::before { background: var(--amber-caution); }
+
+    .annun-lbl {
+      font-size: 8.5px;
+      font-weight: 800;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .annun-val {
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      font-weight: 900;
+      color: var(--text-bright);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .status-ping {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green-status);
+      box-shadow: 0 0 8px var(--green-status);
+      animation: pulsePing 1.8s infinite;
+    }
+
+    @keyframes pulsePing {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
+    }
+
+    /* Main Mission Grid: Gauges & Radar Scope */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 330px 1fr 330px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .panel-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+      padding: 12px 16px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Cyber tech corner brackets */
+    .panel-card::after {
+      content: "";
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 8px; height: 8px;
+      border-top: 2px solid var(--pink-glow);
+      border-right: 2px solid var(--pink-glow);
+      opacity: 0.75;
+      pointer-events: none;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 42, 133, 0.15);
+      padding-bottom: 6px;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--pink-soft);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .panel-tag {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(255, 42, 133, 0.15);
+      color: var(--pink-glow);
+      border: 1px solid rgba(255, 42, 133, 0.3);
+    }
+
+    /* SVG Gauge Containers */
+    .gauge-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin: 4px 0 8px;
+    }
+
+    .gauge-svg {
+      width: 230px;
+      height: 155px;
+      overflow: visible;
+    }
+
+    .gauge-center-text {
+      position: absolute;
+      bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .gauge-val-huge {
+      font-family: var(--font-mono);
+      font-size: 34px;
+      font-weight: 900;
+      color: var(--text-bright);
+      line-height: 1;
+      letter-spacing: -1px;
+      text-shadow: 0 0 18px rgba(255, 42, 133, 0.5);
+    }
+
+    .gauge-unit {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--pink-soft);
+      margin-top: 4px;
+    }
+
+    .gauge-footer-stats {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-top: auto;
+    }
+
+    .stat-row {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-lbl {
+      font-size: 8px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .stat-num {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--text-bright);
+      margin-top: 1px;
+    }
+
+    /* Radar Centerpiece */
+    .radar-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radar-svg {
+      width: 100%;
+      max-width: 360px;
+      height: 250px;
+      filter: drop-shadow(0 0 20px rgba(255, 42, 133, 0.25));
+    }
+
+    .radar-sweep-beam {
+      transform-origin: 180px 125px;
+      animation: radarSweep 3.5s linear infinite;
+    }
+
+    @keyframes radarSweep {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .radar-blip-pulse {
+      animation: blipPulse 1.4s ease-out infinite;
+      transform-origin: center;
+    }
+
+    @keyframes blipPulse {
+      0% { r: 4; opacity: 1; stroke-width: 2.5; }
+      100% { r: 16; opacity: 0; stroke-width: 1; }
+    }
+
+    .radar-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 4px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      width: 100%;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .legend-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    /* Live Charts & Safety Section */
+    .data-grid-two-col {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 12px;
+      flex: 1;
+      min-height: 250px;
+    }
+
+    .chart-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-canvas-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      min-height: 180px;
+    }
+
+    /* NFPA 1127 Comprehensive Compliance Table */
+    .nfpa-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+      margin-top: 4px;
+    }
+
+    .nfpa-table th {
+      text-align: left;
+      padding: 6px 8px;
+      color: var(--pink-soft);
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      border-bottom: 1px solid rgba(255, 42, 133, 0.25);
+      background: rgba(255, 42, 133, 0.06);
+    }
+
+    .nfpa-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+    }
+
+    .nfpa-table tr.active-row {
+      background: rgba(255, 42, 133, 0.12);
+      border-left: 3px solid var(--pink-glow);
+    }
+
+    .nfpa-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-size: 8.5px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .nfpa-pass {
+      background: rgba(16, 185, 129, 0.18);
+      color: var(--green-status);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .nfpa-alert-box {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 42, 133, 0.08);
+      border: 1px solid rgba(255, 42, 133, 0.3);
+      border-radius: 10px;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .nfpa-alert-box strong {
+      color: var(--pink-glow);
+      font-weight: 800;
+    }
+
+    /* Footer Info */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      padding: 8px 18px;
+      backdrop-filter: blur(20px);
+      font-size: 10px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .footer-tags {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .footer-tags span strong {
+      color: var(--pink-soft);
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-emblem">🌸</div>
+      <div class="brand-titles">
+        <h1>
+          WMU AIAA • BRONCO PROPULSION LABORATORY
+          <span class="subhead">AVIONICS & TELEMETRY</span>
+        </h1>
+        <p>STATIC TEST STAND 200 Hz ESP-NOW RF GROUND STATION // DUAL ESP32-S3 IPEX MOD</p>
+      </div>
+    </div>
+
+    <!-- Center Mission Clock -->
+    <div class="header-center-telemetry">
+      <div class="telemetry-pill">
+        <span class="telemetry-pill-lbl">SYSTEM TIME (UTC)</span>
+        <span class="telemetry-pill-val" id="clockUtc">--:--:--</span>
+      </div>
+      <div class="telemetry-pill" style="min-width: 140px;">
+        <span class="telemetry-pill-lbl">STREAM PROTOCOL</span>
+        <span class="telemetry-pill-val" style="color: var(--pink-glow);">200.0 Hz ESP-NOW</span>
+      </div>
+      <div class="telemetry-pill">
+        <span class="telemetry-pill-lbl">LINK MARGIN</span>
+        <span class="telemetry-pill-val" id="hdrMargin" style="color: var(--green-status);">+61 dB</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="header-controls">
+      <button class="btn btn-secondary" id="btnAudioToggle" onclick="toggleAudio()">
+        <span id="audioIcon">🔇</span> SFX MUTED
+      </button>
+      <button class="btn btn-secondary" onclick="simulateWalkOut()">
+        🚶 SIM WALK
+      </button>
+      <button class="btn" onclick="triggerStaticBurn()">
+        🔥 FIRE J425R
+      </button>
+    </div>
+  </header>
+
+  <!-- Top Annunciator Banner -->
+  <div class="annunciator-bar">
+    <div class="annun-card active-green">
+      <span class="annun-lbl">STAND COMM STATUS</span>
+      <span class="annun-val" style="color: var(--green-status);">
+        <span class="status-ping"></span> <span id="lblLinkState">ONLINE</span>
+      </span>
+    </div>
+
+    <div class="annun-card active-cyan">
+      <span class="annun-lbl">CALCULATED RANGE</span>
+      <span class="annun-val" style="color: var(--cyan-cyber);">
+        <span id="lblRangeFt">140.0</span> <span style="font-size: 9.5px; color: var(--text-muted);">FT</span>
+      </span>
+    </div>
+
+    <div class="annun-card active-purple">
+      <span class="annun-lbl">NFPA 1127 J-CLASS (100 FT)</span>
+      <span class="annun-val" style="color: var(--purple-glow);" id="lblNfpaStatus">
+        💖 COMPLIANT
+      </span>
+    </div>
+
+    <div class="annun-card">
+      <span class="annun-lbl">PEAK THRUST FORCE</span>
+      <span class="annun-val" style="color: var(--pink-glow);">
+        <span id="lblPeakThrust">0.0</span> <span style="font-size: 9.5px; color: var(--text-muted);">LBF</span>
+      </span>
+    </div>
+
+    <div class="annun-card active-amber">
+      <span class="annun-lbl">MAX NOZZLE TEMP</span>
+      <span class="annun-val" style="color: var(--amber-caution);">
+        <span id="lblMaxNozzle">72.0°F</span>
+      </span>
+    </div>
+
+    <div class="annun-card">
+      <span class="annun-lbl">TOTAL BURNS LOGGED</span>
+      <span class="annun-val">
+        <span id="lblBurnCount">1</span> <span style="font-size: 9.5px; color: var(--text-muted);">CYCLES</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Telemetry Grid (Thrust Dial, Radar Scope, RF Margin Dial) -->
+  <div class="telemetry-grid">
+
+    <!-- Left Panel: Rocket Motor Thrust Dynamometer Gauge -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <span class="panel-title">🚀 THRUST DYNAMOMETER</span>
+        <span class="panel-tag" id="engineStatusTag" style="color: var(--green-status); border-color: rgba(16,185,129,0.3);">ARMED</span>
+      </div>
+
+      <!-- Thrust Dial Gauge (SVG) -->
+      <div class="gauge-wrapper">
+        <svg class="gauge-svg" viewBox="0 0 250 170">
+          <defs>
+            <linearGradient id="thrustArcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#be185d" />
+              <stop offset="60%" stop-color="#ff2a85" />
+              <stop offset="100%" stop-color="#00f0ff" />
+            </linearGradient>
+            <filter id="pinkGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+          <!-- Gauge Background Arc -->
+          <path d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="11" stroke-linecap="round" />
+          <!-- Animated Thrust Arc Fill -->
+          <path id="svgThrustArc" d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="url(#thrustArcGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="400" stroke-dashoffset="400" filter="url(#pinkGlow)" />
+          
+          <!-- Tick Marks & Numbers -->
+          <g font-size="7.5" fill="var(--text-muted)" font-family="var(--font-mono)" text-anchor="middle">
+            <text x="54" y="168">0</text>
+            <text x="35" y="105">25</text>
+            <text x="75" y="42">50</text>
+            <text x="175" y="42">75</text>
+            <text x="215" y="105">100</text>
+            <text x="195" y="168">120</text>
+          </g>
+
+          <!-- Needle Indicator -->
+          <g id="svgThrustNeedleGroup" transform="rotate(-135 125 105)">
+            <line x1="125" y1="105" x2="125" y2="30" stroke="#ff71ce" stroke-width="2.8" stroke-linecap="round" filter="url(#pinkGlow)" />
+            <circle cx="125" cy="105" r="7" fill="#ff2a85" />
+            <circle cx="125" cy="105" r="3.5" fill="#ffffff" />
+          </g>
+        </svg>
+
+        <!-- Digital Thrust Center Readout -->
+        <div class="gauge-center-text" style="bottom: 12px;">
+          <div class="gauge-val-huge" id="valThrust">0.0</div>
+          <div class="gauge-unit">POUNDS FORCE (LBF)</div>
+        </div>
+      </div>
+
+      <!-- Footer Sub-Stats -->
+      <div class="gauge-footer-stats">
+        <div class="stat-row">
+          <span class="stat-lbl">MOTOR PROFILE</span>
+          <span class="stat-num" style="color: var(--pink-glow);">AEROTECH J425R</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">TOTAL IMPULSE</span>
+          <span class="stat-num" id="valTotalImpulse">765 N·s (J)</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">BURN DURATION</span>
+          <span class="stat-num">1.80 SEC</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">CHAMBER PSI (EST)</span>
+          <span class="stat-num" id="valChamberPsi">0 PSI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Panel: 360° Polar Vector Radar & Standoff Scope -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <span class="panel-title">📡 NFPA 1127 RF RADAR & STANDOFF SCOPE</span>
+        <span class="panel-tag" id="radarStandoffTag" style="color: var(--cyan-cyber); border-color: rgba(0,240,255,0.3);">140 FT LOS</span>
+      </div>
+
+      <div class="radar-container">
+        <svg class="radar-svg" viewBox="0 0 360 250">
+          <defs>
+            <linearGradient id="sweepGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="rgba(255, 42, 133, 0.45)" />
+              <stop offset="100%" stop-color="rgba(255, 42, 133, 0.0)" />
+            </linearGradient>
+            <radialGradient id="radarGlass" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="rgba(30, 10, 50, 0.6)" />
+              <stop offset="85%" stop-color="rgba(10, 5, 20, 0.95)" />
+              <stop offset="100%" stop-color="rgba(255, 42, 133, 0.25)" />
+            </radialGradient>
+          </defs>
+
+          <!-- Outer Radar Bezel (Center: 180, 125, R=110) -->
+          <circle cx="180" cy="125" r="110" fill="url(#radarGlass)" stroke="rgba(255, 42, 133, 0.4)" stroke-width="1.8" />
+          <circle cx="180" cy="125" r="114" fill="none" stroke="rgba(255, 113, 206, 0.2)" stroke-width="1" stroke-dasharray="3,5" />
+
+          <!-- Azimuth Crosshairs -->
+          <line x1="180" y1="15" x2="180" y2="235" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+          <line x1="70" y1="125" x2="290" y2="125" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+
+          <!-- Standoff Rings (Scaled to 320 ft max = 100px radius) -->
+          <!-- 50 ft Ring (r=16px) -->
+          <circle cx="180" cy="125" r="16" fill="none" stroke="rgba(0, 240, 255, 0.25)" stroke-width="1" stroke-dasharray="2,2" />
+          <!-- 100 ft NFPA 1127 J-CLASS MANDATORY RING (r=32px) -->
+          <circle cx="180" cy="125" r="32" fill="rgba(255, 42, 133, 0.05)" stroke="#ff2a85" stroke-width="2" filter="url(#pinkGlow)" />
+          <text x="180" y="89" fill="#ff71ce" font-size="6" font-weight="900" font-family="var(--font-mono)" text-anchor="middle" letter-spacing="0.5">NFPA 1127 J-CLASS (100 FT MIN)</text>
+
+          <!-- 200 ft K-CLASS RING (r=64px) -->
+          <circle cx="180" cy="125" r="64" fill="none" stroke="rgba(168, 85, 247, 0.45)" stroke-width="1.2" stroke-dasharray="3,3" />
+          <text x="180" y="58" fill="#a855f7" font-size="6" font-weight="800" font-family="var(--font-mono)" text-anchor="middle">K-CLASS STANDOFF (200 FT)</text>
+
+          <!-- 300 ft L-CLASS RING (r=95px) -->
+          <circle cx="180" cy="125" r="95" fill="none" stroke="rgba(251, 191, 36, 0.4)" stroke-width="1.2" stroke-dasharray="4,4" />
+          <text x="180" y="27" fill="#fbbf24" font-size="6" font-weight="800" font-family="var(--font-mono)" text-anchor="middle">L-CLASS STANDOFF (300 FT)</text>
+
+          <!-- Rotating Radar Sweep Beam -->
+          <g class="radar-sweep-beam">
+            <path d="M 180 125 L 290 125 A 110 110 0 0 0 258 47 Z" fill="url(#sweepGrad)" />
+            <line x1="180" y1="125" x2="290" y2="125" stroke="#ff2a85" stroke-width="1.5" />
+          </g>
+
+          <!-- Ground Station Center Blip (0 ft) -->
+          <circle cx="180" cy="125" r="4" fill="#00f0ff" />
+          <circle cx="180" cy="125" r="7" fill="none" stroke="#00f0ff" stroke-width="1" />
+          <text x="180" y="139" fill="#00f0ff" font-size="6.5" font-weight="900" font-family="var(--font-mono)" text-anchor="middle">BUNKER (0 FT)</text>
+
+          <!-- Stand Transmitter Target Blip (Dynamic position updated by JS) -->
+          <g id="radarTargetBlip" transform="translate(225, 85)">
+            <!-- Pulsing Halo -->
+            <circle class="radar-blip-pulse" cx="0" cy="0" r="8" fill="none" stroke="#ff2a85" />
+            <circle cx="0" cy="0" r="5" fill="#ff2a85" filter="url(#pinkGlow)" />
+            <circle cx="0" cy="0" r="2" fill="#ffffff" />
+            <!-- Tag Callout Box (Offset safely away from center) -->
+            <rect id="radarTagRect" x="8" y="-18" width="80" height="22" rx="4" fill="rgba(16,8,28,0.9)" stroke="#ff71ce" stroke-width="0.8" />
+            <text x="12" y="-8" fill="#ffffff" font-size="6.5" font-weight="900" font-family="var(--font-mono)">STAND: <tspan id="radarDistTag">140.0 FT</tspan></text>
+            <text x="12" y="0" fill="#00f0ff" font-size="6" font-weight="800" font-family="var(--font-mono)">RSSI: <tspan id="radarRssiTag">-42 dBm</tspan></text>
+          </g>
+        </svg>
+
+        <!-- Radar Legend -->
+        <div class="radar-legend">
+          <div class="legend-item"><span class="legend-dot" style="background: #00f0ff;"></span> Ground Station</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #ff2a85;"></span> J-Class 100ft Min</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #a855f7;"></span> K-Class 200ft</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #fbbf24;"></span> L-Class 300ft</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #ff71ce; box-shadow: 0 0 6px #ff71ce;"></span> Stand (TX)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: RF Link Quality & Path Loss Dial -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <span class="panel-title">📶 RF LINK & SIGNAL MARGIN</span>
+        <span class="panel-tag" id="rfQualityTag" style="color: var(--green-status); border-color: rgba(16,185,129,0.3);">EXCELLENT</span>
+      </div>
+
+      <!-- RF Dial Gauge (SVG) -->
+      <div class="gauge-wrapper">
+        <svg class="gauge-svg" viewBox="0 0 250 170">
+          <defs>
+            <linearGradient id="rfArcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#f43f5e" />
+              <stop offset="35%" stop-color="#fbbf24" />
+              <stop offset="70%" stop-color="#00f0ff" />
+              <stop offset="100%" stop-color="#ff71ce" />
+            </linearGradient>
+          </defs>
+          <!-- Gauge Background Arc -->
+          <path d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="11" stroke-linecap="round" />
+          <!-- Animated RF Arc Fill -->
+          <path id="svgRfArc" d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="url(#rfArcGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="400" stroke-dashoffset="150" filter="url(#pinkGlow)" />
+          
+          <!-- Tick Marks & dBm Labels -->
+          <g font-size="7.5" fill="var(--text-muted)" font-family="var(--font-mono)" text-anchor="middle">
+            <text x="50" y="168">-100</text>
+            <text x="32" y="105">-85</text>
+            <text x="75" y="42">-70</text>
+            <text x="175" y="42">-55</text>
+            <text x="218" y="105">-40</text>
+            <text x="195" y="168">-30</text>
+          </g>
+
+          <!-- Needle Indicator -->
+          <g id="svgRfNeedleGroup" transform="rotate(45 125 105)">
+            <line x1="125" y1="105" x2="125" y2="30" stroke="#00f0ff" stroke-width="2.8" stroke-linecap="round" />
+            <circle cx="125" cy="105" r="7" fill="#00f0ff" />
+            <circle cx="125" cy="105" r="3.5" fill="#ffffff" />
+          </g>
+        </svg>
+
+        <!-- Digital RF Center Readout -->
+        <div class="gauge-center-text" style="bottom: 12px;">
+          <div class="gauge-val-huge" id="valRssi" style="color: var(--cyan-cyber); margin-bottom: 2px;">-42</div>
+          <div class="gauge-unit">RECEIVED RSSI (DBM)</div>
+        </div>
+      </div>
+
+      <!-- Footer Sub-Stats -->
+      <div class="gauge-footer-stats">
+        <div class="stat-row">
+          <span class="stat-lbl">SAFETY MARGIN</span>
+          <span class="stat-num" id="valMarginDb" style="color: var(--green-status);">+55 dB</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">RX SENSITIVITY</span>
+          <span class="stat-num">-97 dBm</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">PACKET DROP RATE</span>
+          <span class="stat-num" id="valDropRate" style="color: var(--green-status);">0.00%</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">TX EIRP POWER</span>
+          <span class="stat-num">+24.0 dBm</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lower Section: Live 200 Hz Oscilloscope & NFPA 1127 Regulatory Panel -->
+  <div class="data-grid-two-col">
+
+    <!-- Left: Live Rolling Motor Burn Curves -->
+    <div class="panel-card chart-panel">
+      <div class="panel-header">
+        <span class="panel-title">📈 200 Hz HIGH-SPEED TELEMETRY TRACE</span>
+        <div style="display: flex; gap: 8px;">
+          <span class="panel-tag" style="color: var(--pink-glow);">THRUST (LBF)</span>
+          <span class="panel-tag" style="color: var(--amber-caution);">NOZZLE (°F)</span>
+        </div>
+      </div>
+      <div class="chart-canvas-container">
+        <canvas id="liveCurveChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: Authoritative NFPA 1127 Standards & Compliance Dossier -->
+    <div class="panel-card chart-panel" style="overflow-y: auto;">
+      <div class="panel-header">
+        <span class="panel-title">⚖️ NFPA 1127 SAFETY COMPLIANCE SPEC</span>
+        <span class="panel-tag" style="color: var(--green-status); border-color: rgba(16,185,129,0.3);">STANDOFF VERIFIED</span>
+      </div>
+
+      <!-- Detailed Regulatory Breakdown -->
+      <table class="nfpa-table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Total Impulse</th>
+            <th>NFPA 1127 §4.16.4</th>
+            <th>Current Margin</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>H</strong></td>
+            <td>160.01 – 320 N·s</td>
+            <td>50 ft (15 m)</td>
+            <td>+90.0 ft</td>
+            <td><span class="nfpa-badge nfpa-pass">PASS</span></td>
+          </tr>
+          <tr class="active-row">
+            <td><strong>J ★</strong></td>
+            <td>640.01 – 1,280 N·s</td>
+            <td><strong>100 ft (30 m)</strong></td>
+            <td><strong id="tbMarginJ">+40.0 ft</strong></td>
+            <td><span class="nfpa-badge nfpa-pass" id="badgeJStatus">💖 COMPLIANT</span></td>
+          </tr>
+          <tr>
+            <td><strong>K</strong></td>
+            <td>1,280.01 – 2,560 N·s</td>
+            <td>200 ft (61 m)</td>
+            <td>+140.0 ft max</td>
+            <td><span class="nfpa-badge nfpa-pass">QUALIFIED</span></td>
+          </tr>
+          <tr>
+            <td><strong>L</strong></td>
+            <td>2,560.01 – 5,120 N·s</td>
+            <td>300 ft (91 m)</td>
+            <td>+28 dB at 300'</td>
+            <td><span class="nfpa-badge nfpa-pass">CAPABLE</span></td>
+          </tr>
+          <tr>
+            <td><strong>M</strong></td>
+            <td>5,120.01 – 10,240 N·s</td>
+            <td>500 ft (152 m)</td>
+            <td>LOS Margin: 20dB</td>
+            <td><span class="nfpa-badge nfpa-pass">MARGINAL</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Authoritative Code Citation Callout -->
+      <div class="nfpa-alert-box">
+        <strong>NFPA 1127 (2023) §4.16.4 & Table 4.16.4:</strong><br>
+        Mandates a minimum distance of <strong>100 ft (30 meters)</strong> from high-power rockets and motors (Class J, such as our Aerotech J425R @ ~765 N·s) to spectators.<br><br>
+        <strong>NFPA 1127 §4.18 & Tripoli Safety Code Part 11:</strong><br>
+        Directs that all static motor firings must comply with Table 4.16.4 standoff perimeters, require remote electrical ignition, flame deflection, and zero personnel within the 100 ft blast circle. The external IPEX antenna modification guarantees link margins of <strong>&gt;45 dB</strong> at this perimeter.
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Hardware & Telemetry Bar -->
+  <footer>
+    <div class="footer-tags">
+      <span>Stand MAC: <strong>44:bd:8d:71:94:1c</strong></span>
+      <span>Receiver MAC: <strong>14:c1:9f:3b:e5:4c</strong></span>
+      <span>Antenna Config: <strong>IPEX / U.FL 0Ω Jumper Mod (+24 dBm EIRP)</strong></span>
+      <span>Packets Processed: <strong id="lblPacketTotal">0</strong></span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-secondary" onclick="exportFlightLog()">💾 EXPORT FLIGHT CSV</button>
+      <button class="btn btn-secondary" onclick="window.print()">📸 PRINT DOSSIER</button>
+    </div>
+  </footer>
+
+  <script>
+    // Audio Synthesizer Engine (Web Audio API)
+    let audioCtx = null;
+    let sfxEnabled = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function toggleAudio() {
+      initAudio();
+      sfxEnabled = !sfxEnabled;
+      const btn = document.getElementById('btnAudioToggle');
+      if (sfxEnabled) {
+        btn.className = "btn btn-active-toggle";
+        btn.innerHTML = `<span>🔊</span> SFX ENABLED`;
+        playBeep(880, 0.08, 'sine');
+      } else {
+        btn.className = "btn btn-secondary";
+        btn.innerHTML = `<span>🔇</span> SFX MUTED`;
+      }
+    }
+
+    function playBeep(freq, duration, type='sine') {
+      if (!sfxEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function playIgnitionAudio() {
+      if (!sfxEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(650, audioCtx.currentTime + 0.3);
+        osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 1.8);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.8);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 1.8);
+      } catch(e) {}
+    }
+
+    // Rolling Charts Data Buffer (60 points)
+    const MAX_PTS = 60;
+    const chartLabels = Array(MAX_PTS).fill('');
+    const thrustSeries = Array(MAX_PTS).fill(0);
+    const nozzleSeries = Array(MAX_PTS).fill(72);
+
+    const ctx = document.getElementById('liveCurveChart').getContext('2d');
+    const liveChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: chartLabels,
+        datasets: [
+          {
+            label: 'Thrust Force (lbf)',
+            data: thrustSeries,
+            borderColor: '#ff2a85',
+            backgroundColor: 'rgba(255, 42, 133, 0.18)',
+            borderWidth: 2.2,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            yAxisID: 'yThrust'
+          },
+          {
+            label: 'Nozzle Temp (°F)',
+            data: nozzleSeries,
+            borderColor: '#fbbf24',
+            borderWidth: 1.8,
+            borderDash: [5, 4],
+            fill: false,
+            tension: 0.25,
+            pointRadius: 0,
+            yAxisID: 'yTemp'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { intersect: false, mode: 'index' },
+        scales: {
+          x: { display: false },
+          yThrust: {
+            type: 'linear',
+            position: 'left',
+            min: 0,
+            max: 110,
+            grid: { color: 'rgba(255, 42, 133, 0.08)' },
+            ticks: { color: '#ff71ce', font: { family: 'var(--font-mono)', size: 9 } },
+            title: { display: true, text: 'Thrust (lbf)', color: '#ff71ce', font: { size: 9, weight: 'bold' } }
+          },
+          yTemp: {
+            type: 'linear',
+            position: 'right',
+            min: 50,
+            max: 550,
+            grid: { drawOnChartArea: false },
+            ticks: { color: '#fbbf24', font: { family: 'var(--font-mono)', size: 9 } },
+            title: { display: true, text: 'Nozzle Temp (°F)', color: '#fbbf24', font: { size: 9, weight: 'bold' } }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: { color: '#e2e8f0', font: { weight: 'bold', size: 10 } }
+          }
+        }
+      }
+    });
+
+    // Telemetry State
+    let peakThrust = 0;
+    let maxNozzle = 72;
+    let packetCount = 0;
+    let flightLog = [];
+    let isBurning = false;
+
+    // SVG Gauge Updaters
+    function setThrustGauge(lbf) {
+      const clamped = Math.max(0, Math.min(120, lbf));
+      const deg = -135 + (clamped / 120) * 270;
+      document.getElementById('svgThrustNeedleGroup').setAttribute('transform', `rotate(${deg} 125 105)`);
+      
+      const offset = 400 - (clamped / 120) * 270;
+      document.getElementById('svgThrustArc').style.strokeDashoffset = offset;
+      document.getElementById('valThrust').innerText = clamped.toFixed(1);
+
+      if (clamped > peakThrust) {
+        peakThrust = clamped;
+        document.getElementById('lblPeakThrust').innerText = peakThrust.toFixed(1);
+      }
+
+      document.getElementById('valChamberPsi').innerText = Math.round(clamped * 5.2) + ' PSI';
+
+      const tag = document.getElementById('engineStatusTag');
+      if (clamped > 2.0) {
+        tag.innerText = '🔥 ACTIVE BURN';
+        tag.style.color = '#ff2a85';
+        tag.style.borderColor = '#ff2a85';
+      } else if (maxNozzle > 120) {
+        tag.innerText = '❄️ COOLDOWN';
+        tag.style.color = '#a855f7';
+        tag.style.borderColor = '#a855f7';
+      } else {
+        tag.innerText = 'ARMED';
+        tag.style.color = '#10b981';
+        tag.style.borderColor = 'rgba(16,185,129,0.3)';
+      }
+    }
+
+    function setRfGauge(rssi, distFt) {
+      const clamped = Math.max(-100, Math.min(-30, rssi));
+      const ratio = (clamped - (-100)) / 70;
+      const deg = -135 + ratio * 270;
+      document.getElementById('svgRfNeedleGroup').setAttribute('transform', `rotate(${deg} 125 105)`);
+      
+      const offset = 400 - ratio * 270;
+      document.getElementById('svgRfArc').style.strokeDashoffset = offset;
+      document.getElementById('valRssi').innerText = clamped;
+
+      const margin = clamped - (-97);
+      document.getElementById('valMarginDb').innerText = '+' + margin + ' dB';
+      document.getElementById('hdrMargin').innerText = '+' + margin + ' dB';
+
+      // Update Radar Target position (Center: 180, 125, max r=100 for 320ft)
+      const radDist = Math.max(12, Math.min(100, (distFt / 320) * 100));
+      const angle = -1.0; // radians (~60 deg up-right)
+      const targetX = 180 + radDist * Math.cos(angle);
+      const targetY = 125 + radDist * Math.sin(angle);
+      document.getElementById('radarTargetBlip').setAttribute('transform', `translate(${targetX}, ${targetY})`);
+      document.getElementById('radarDistTag').innerText = distFt.toFixed(1) + ' FT';
+      document.getElementById('radarRssiTag').innerText = clamped + ' dBm';
+
+      // Ensure tag box doesn't overlap bunker when close
+      const tagRect = document.getElementById('radarTagRect');
+      if (radDist < 25) {
+        tagRect.setAttribute('x', '10');
+        tagRect.setAttribute('y', '-25');
+      } else {
+        tagRect.setAttribute('x', '8');
+        tagRect.setAttribute('y', '-18');
+      }
+
+      // Distance labels
+      document.getElementById('lblRangeFt').innerText = distFt.toFixed(1);
+      document.getElementById('radarStandoffTag').innerText = distFt.toFixed(0) + ' FT LOS';
+
+      // NFPA compliance calculation
+      const marginJ = distFt - 100.0;
+      const tbMargin = document.getElementById('tbMarginJ');
+      const badgeJ = document.getElementById('badgeJStatus');
+      const annunNfpa = document.getElementById('lblNfpaStatus');
+
+      if (distFt >= 100.0) {
+        tbMargin.innerText = '+' + marginJ.toFixed(1) + ' ft';
+        tbMargin.style.color = '#10b981';
+        badgeJ.className = 'nfpa-badge nfpa-pass';
+        badgeJ.innerText = '💖 COMPLIANT';
+        annunNfpa.innerText = '💖 COMPLIANT';
+        annunNfpa.style.color = '#c084fc';
+      } else {
+        tbMargin.innerText = marginJ.toFixed(1) + ' ft';
+        tbMargin.style.color = '#f43f5e';
+        badgeJ.className = 'nfpa-badge';
+        badgeJ.style.background = 'rgba(244,63,94,0.2)';
+        badgeJ.style.color = '#f43f5e';
+        badgeJ.innerText = '⚠ WITHIN 100 FT';
+        annunNfpa.innerText = '⚠ BLAST ZONE';
+        annunNfpa.style.color = '#f43f5e';
+      }
+    }
+
+    // Process new incoming telemetry frame
+    function handleTelemetryPacket(d) {
+      packetCount++;
+      document.getElementById('lblPacketTotal').innerText = packetCount.toLocaleString();
+
+      setThrustGauge(d.thrust);
+      setRfGauge(d.rssi, d.dist_ft);
+
+      if (d.temp_nozzle > maxNozzle) {
+        maxNozzle = d.temp_nozzle;
+        document.getElementById('lblMaxNozzle').innerText = maxNozzle.toFixed(1) + '°F';
+      }
+
+      // Update Chart Datasets
+      thrustSeries.push(d.thrust);
+      thrustSeries.shift();
+      nozzleSeries.push(d.temp_nozzle);
+      nozzleSeries.shift();
+      liveChart.update();
+
+      // Audio cues
+      if (d.thrust > 5.0 && !isBurning) {
+        isBurning = true;
+        playIgnitionAudio();
+      } else if (d.thrust < 1.0 && isBurning) {
+        isBurning = false;
+        playBeep(1200, 0.2, 'sine');
+      }
+
+      flightLog.push(d);
+    }
+
+    // Mission Clock updater
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clockUtc').innerText = now.toTimeString().split(' ')[0] + ' EST';
+    }, 1000);
+
+    // Real-Time Server-Sent Events (SSE) Stream
+    let evtSource = null;
+    function connectSse() {
+      evtSource = new EventSource('/api/stream');
+      evtSource.onmessage = function(event) {
+        try {
+          const d = JSON.parse(event.data);
+          handleTelemetryPacket(d);
+        } catch(e) {}
+      };
+      evtSource.onerror = function() {
+        document.getElementById('lblLinkState').innerText = 'RECONNECTING';
+        document.getElementById('lblLinkState').style.color = '#fbbf24';
+      };
+      evtSource.onopen = function() {
+        document.getElementById('lblLinkState').innerText = 'ONLINE';
+        document.getElementById('lblLinkState').style.color = '#10b981';
+      };
+    }
+    connectSse();
+
+    // Simulation: 200 Hz Aerotech J425R Static Burn Profile
+    let simBurnInterval = null;
+    function triggerStaticBurn() {
+      initAudio();
+      playIgnitionAudio();
+      let step = 0;
+      const totalSteps = 45;
+      
+      if (simBurnInterval) clearInterval(simBurnInterval);
+
+      simBurnInterval = setInterval(() => {
+        step++;
+        let thrust = 0;
+        let t_ms = step * 50;
+
+        if (step <= 4) {
+          thrust = (step / 4) * 92.8;
+        } else if (step <= 20) {
+          thrust = 92.8 - (step - 4) * 0.8 + (Math.random() * 2 - 1);
+        } else if (step <= 36) {
+          thrust = 75.0 - (step - 20) * 2.2 + (Math.random() * 1.5 - 0.75);
+        } else if (step <= 40) {
+          thrust = Math.max(0, 15.0 - (step - 36) * 3.7);
+        } else {
+          thrust = 0.0;
+        }
+
+        let nozzle = 72 + Math.min(380, step * 9.5);
+        let casing = 72 + Math.min(85, step * 2.1);
+        let rssi = -42 + Math.floor(Math.random() * 4 - 2);
+        let dist = 142.5;
+
+        handleTelemetryPacket({
+          timestamp_ms: t_ms,
+          thrust: Math.max(0, thrust),
+          temp_casing: casing,
+          temp_nozzle: nozzle,
+          temp_ambient: 72.0,
+          rssi: rssi,
+          dist_ft: dist,
+          dist_m: dist * 0.3048
+        });
+
+        if (step >= totalSteps) {
+          clearInterval(simBurnInterval);
+          simBurnInterval = null;
+        }
+      }, 50);
+    }
+
+    // Simulation: Dynamic Walk Out Test (15 ft -> 320 ft)
+    let simWalkInterval = null;
+    function simulateWalkOut() {
+      initAudio();
+      let walkStep = 0;
+      const totalWalkSteps = 60;
+      if (simWalkInterval) clearInterval(simWalkInterval);
+
+      simWalkInterval = setInterval(() => {
+        walkStep++;
+        const progress = walkStep / totalWalkSteps;
+        const currentDist = progress <= 0.6 ? 15 + (progress / 0.6) * 305 : 320 - ((progress - 0.6) / 0.4) * 295;
+        
+        const dist_m = currentDist * 0.3048;
+        const fspl = 40.0 + 20.0 * Math.log10(Math.max(1.0, dist_m));
+        const rssi = Math.round(24.0 - fspl + (Math.random() * 3 - 1.5));
+
+        handleTelemetryPacket({
+          timestamp_ms: walkStep * 100,
+          thrust: 0.0,
+          temp_casing: 72.0,
+          temp_nozzle: 72.0,
+          temp_ambient: 72.0,
+          rssi: rssi,
+          dist_ft: currentDist,
+          dist_m: dist_m
+        });
+
+        playBeep(440 + currentDist * 2, 0.04, 'triangle');
+
+        if (walkStep >= totalWalkSteps) {
+          clearInterval(simWalkInterval);
+          simWalkInterval = null;
+        }
+      }, 80);
+    }
+
+    function exportFlightLog() {
+      if (flightLog.length === 0) {
+        alert("Telemetry buffer empty — waiting for motor burn or sensor data!");
+        return;
+      }
+      let csv = "timestamp_ms,thrust_lbf,temp_casing_f,temp_nozzle_f,temp_ambient_f,rssi_dbm,dist_ft\n";
+      flightLog.forEach(r => {
+        csv += `${r.timestamp_ms},${r.thrust.toFixed(2)},${r.temp_casing.toFixed(1)},${r.temp_nozzle.toFixed(1)},${r.temp_ambient.toFixed(1)},${r.rssi},${r.dist_ft.toFixed(1)}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `bpl_telemetry_burn_${Date.now()}.csv`);
+      a.click();
+    }
+
+    setThrustGauge(0.0);
+    setRfGauge(-42, 140.0);
+  </script>
+</body>
+</html>
