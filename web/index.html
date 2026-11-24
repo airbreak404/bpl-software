@@ -8,10 +8,10 @@
   <style>
     :root {
       --bg-base: #06030c;
-      --bg-surface: rgba(18, 10, 32, 0.85);
-      --bg-surface-elevated: rgba(28, 15, 52, 0.92);
-      --border-glow: rgba(255, 42, 133, 0.32);
-      --border-active: rgba(255, 113, 206, 0.75);
+      --bg-surface: rgba(18, 10, 32, 0.88);
+      --bg-surface-elevated: rgba(28, 15, 52, 0.94);
+      --border-glow: rgba(255, 42, 133, 0.35);
+      --border-active: rgba(255, 113, 206, 0.8);
       --pink-primary: #ff2a85;
       --pink-glow: #ff71ce;
       --pink-soft: #f472b6;
@@ -56,16 +56,16 @@
       gap: 10px;
     }
 
-    /* Scanline overlay effect */
+    /* Lightweight scanline overlay */
     body::before {
       content: "";
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%);
       background-size: 100% 3px;
       z-index: 9999;
       pointer-events: none;
-      opacity: 0.35;
+      opacity: 0.3;
     }
 
     /* Mission Control Header */
@@ -77,8 +77,8 @@
       border: 1px solid var(--border-glow);
       border-radius: 14px;
       padding: 8px 18px;
-      backdrop-filter: blur(24px);
-      box-shadow: 0 4px 24px rgba(255, 42, 133, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
       position: relative;
       flex-shrink: 0;
     }
@@ -107,13 +107,8 @@
       align-items: center;
       justify-content: center;
       font-size: 20px;
-      box-shadow: 0 0 14px rgba(255, 42, 133, 0.4);
-      animation: emblemPulse 3s ease-in-out infinite alternate;
-    }
-
-    @keyframes emblemPulse {
-      0% { box-shadow: 0 0 10px rgba(255, 42, 133, 0.3); transform: scale(1); }
-      100% { box-shadow: 0 0 20px rgba(255, 113, 206, 0.6); transform: scale(1.02); }
+      box-shadow: 0 0 12px rgba(255, 42, 133, 0.4);
+      transform: translateZ(0);
     }
 
     .brand-titles h1 {
@@ -199,12 +194,13 @@
       align-items: center;
       gap: 6px;
       box-shadow: 0 3px 14px rgba(255, 42, 133, 0.35);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      transform: translateZ(0);
     }
 
     .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 20px rgba(255, 42, 133, 0.55);
+      transform: translateY(-1px);
+      box-shadow: 0 5px 18px rgba(255, 42, 133, 0.55);
       border-color: #fff;
     }
 
@@ -229,7 +225,7 @@
       background: rgba(0, 240, 255, 0.15);
       border-color: var(--cyan-cyber);
       color: var(--cyan-cyber);
-      box-shadow: 0 0 14px rgba(0, 240, 255, 0.3);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
     }
 
     /* Mission Annunciator Banner */
@@ -290,12 +286,12 @@
       border-radius: 50%;
       background: var(--green-status);
       box-shadow: 0 0 8px var(--green-status);
-      animation: pulsePing 1.8s infinite;
+      animation: pulsePing 2s infinite;
     }
 
     @keyframes pulsePing {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 0.4; transform: scale(0.85); }
     }
 
     /* Main Mission Grid: Gauges & Radar Scope */
@@ -311,14 +307,13 @@
       border: 1px solid var(--border-glow);
       border-radius: 16px;
       padding: 12px 16px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
       position: relative;
       display: flex;
       flex-direction: column;
     }
 
-    /* Cyber tech corner brackets */
     .panel-card::after {
       content: "";
       position: absolute;
@@ -393,7 +388,7 @@
       color: var(--text-bright);
       line-height: 1;
       letter-spacing: -1px;
-      text-shadow: 0 0 18px rgba(255, 42, 133, 0.5);
+      text-shadow: 0 0 16px rgba(255, 42, 133, 0.45);
     }
 
     .gauge-unit {
@@ -450,12 +445,15 @@
       width: 100%;
       max-width: 360px;
       height: 250px;
-      filter: drop-shadow(0 0 20px rgba(255, 42, 133, 0.25));
+      filter: drop-shadow(0 0 16px rgba(255, 42, 133, 0.2));
     }
 
+    /* Hardware-accelerated sweep with zero CPU raster overhead */
     .radar-sweep-beam {
       transform-origin: 180px 125px;
       animation: radarSweep 3.5s linear infinite;
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     @keyframes radarSweep {
@@ -464,8 +462,9 @@
     }
 
     .radar-blip-pulse {
-      animation: blipPulse 1.4s ease-out infinite;
+      animation: blipPulse 1.6s ease-out infinite;
       transform-origin: center;
+      will-change: transform, opacity;
     }
 
     @keyframes blipPulse {
@@ -596,7 +595,7 @@
       border: 1px solid var(--border-glow);
       border-radius: 12px;
       padding: 8px 18px;
-      backdrop-filter: blur(20px);
+      backdrop-filter: blur(16px);
       font-size: 10px;
       color: var(--text-muted);
       flex-shrink: 0;
@@ -641,7 +640,7 @@
       </div>
       <div class="telemetry-pill">
         <span class="telemetry-pill-lbl">LINK MARGIN</span>
-        <span class="telemetry-pill-val" id="hdrMargin" style="color: var(--green-status);">+61 dB</span>
+        <span class="telemetry-pill-val" id="hdrMargin" style="color: var(--green-status);">+66 dB</span>
       </div>
     </div>
 
@@ -671,14 +670,14 @@
     <div class="annun-card active-cyan">
       <span class="annun-lbl">CALCULATED RANGE</span>
       <span class="annun-val" style="color: var(--cyan-cyber);">
-        <span id="lblRangeFt">140.0</span> <span style="font-size: 9.5px; color: var(--text-muted);">FT</span>
+        <span id="lblRangeFt">2.1</span> <span style="font-size: 9.5px; color: var(--text-muted);">FT (DESK)</span>
       </span>
     </div>
 
-    <div class="annun-card active-purple">
+    <div class="annun-card active-amber">
       <span class="annun-lbl">NFPA 1127 J-CLASS (100 FT)</span>
-      <span class="annun-val" style="color: var(--purple-glow);" id="lblNfpaStatus">
-        💖 COMPLIANT
+      <span class="annun-val" style="color: var(--amber-caution);" id="lblNfpaStatus">
+        ⚠ BENCH / NEAR-FIELD
       </span>
     </div>
 
@@ -723,15 +722,11 @@
               <stop offset="60%" stop-color="#ff2a85" />
               <stop offset="100%" stop-color="#00f0ff" />
             </linearGradient>
-            <filter id="pinkGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3.5" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
           </defs>
           <!-- Gauge Background Arc -->
           <path d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="11" stroke-linecap="round" />
           <!-- Animated Thrust Arc Fill -->
-          <path id="svgThrustArc" d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="url(#thrustArcGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="400" stroke-dashoffset="400" filter="url(#pinkGlow)" />
+          <path id="svgThrustArc" d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="url(#thrustArcGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="400" stroke-dashoffset="400" />
           
           <!-- Tick Marks & Numbers -->
           <g font-size="7.5" fill="var(--text-muted)" font-family="var(--font-mono)" text-anchor="middle">
@@ -744,8 +739,8 @@
           </g>
 
           <!-- Needle Indicator -->
-          <g id="svgThrustNeedleGroup" transform="rotate(-135 125 105)">
-            <line x1="125" y1="105" x2="125" y2="30" stroke="#ff71ce" stroke-width="2.8" stroke-linecap="round" filter="url(#pinkGlow)" />
+          <g id="svgThrustNeedleGroup" transform="rotate(-135 125 105)" style="will-change: transform;">
+            <line x1="125" y1="105" x2="125" y2="30" stroke="#ff71ce" stroke-width="2.8" stroke-linecap="round" />
             <circle cx="125" cy="105" r="7" fill="#ff2a85" />
             <circle cx="125" cy="105" r="3.5" fill="#ffffff" />
           </g>
@@ -783,14 +778,14 @@
     <div class="panel-card">
       <div class="panel-header">
         <span class="panel-title">📡 NFPA 1127 RF RADAR & STANDOFF SCOPE</span>
-        <span class="panel-tag" id="radarStandoffTag" style="color: var(--cyan-cyber); border-color: rgba(0,240,255,0.3);">140 FT LOS</span>
+        <span class="panel-tag" id="radarStandoffTag" style="color: var(--cyan-cyber); border-color: rgba(0,240,255,0.3);">2.1 FT BENCH</span>
       </div>
 
       <div class="radar-container">
         <svg class="radar-svg" viewBox="0 0 360 250">
           <defs>
             <linearGradient id="sweepGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="rgba(255, 42, 133, 0.45)" />
+              <stop offset="0%" stop-color="rgba(255, 42, 133, 0.4)" />
               <stop offset="100%" stop-color="rgba(255, 42, 133, 0.0)" />
             </linearGradient>
             <radialGradient id="radarGlass" cx="50%" cy="50%" r="50%">
@@ -812,7 +807,7 @@
           <!-- 50 ft Ring (r=16px) -->
           <circle cx="180" cy="125" r="16" fill="none" stroke="rgba(0, 240, 255, 0.25)" stroke-width="1" stroke-dasharray="2,2" />
           <!-- 100 ft NFPA 1127 J-CLASS MANDATORY RING (r=32px) -->
-          <circle cx="180" cy="125" r="32" fill="rgba(255, 42, 133, 0.05)" stroke="#ff2a85" stroke-width="2" filter="url(#pinkGlow)" />
+          <circle cx="180" cy="125" r="32" fill="rgba(255, 42, 133, 0.05)" stroke="#ff2a85" stroke-width="2" />
           <text x="180" y="89" fill="#ff71ce" font-size="6" font-weight="900" font-family="var(--font-mono)" text-anchor="middle" letter-spacing="0.5">NFPA 1127 J-CLASS (100 FT MIN)</text>
 
           <!-- 200 ft K-CLASS RING (r=64px) -->
@@ -823,7 +818,7 @@
           <circle cx="180" cy="125" r="95" fill="none" stroke="rgba(251, 191, 36, 0.4)" stroke-width="1.2" stroke-dasharray="4,4" />
           <text x="180" y="27" fill="#fbbf24" font-size="6" font-weight="800" font-family="var(--font-mono)" text-anchor="middle">L-CLASS STANDOFF (300 FT)</text>
 
-          <!-- Rotating Radar Sweep Beam -->
+          <!-- Rotating Radar Sweep Beam (Hardware-Accelerated) -->
           <g class="radar-sweep-beam">
             <path d="M 180 125 L 290 125 A 110 110 0 0 0 258 47 Z" fill="url(#sweepGrad)" />
             <line x1="180" y1="125" x2="290" y2="125" stroke="#ff2a85" stroke-width="1.5" />
@@ -835,15 +830,14 @@
           <text x="180" y="139" fill="#00f0ff" font-size="6.5" font-weight="900" font-family="var(--font-mono)" text-anchor="middle">BUNKER (0 FT)</text>
 
           <!-- Stand Transmitter Target Blip (Dynamic position updated by JS) -->
-          <g id="radarTargetBlip" transform="translate(225, 85)">
-            <!-- Pulsing Halo -->
+          <g id="radarTargetBlip" transform="translate(186, 117)" style="will-change: transform;">
             <circle class="radar-blip-pulse" cx="0" cy="0" r="8" fill="none" stroke="#ff2a85" />
-            <circle cx="0" cy="0" r="5" fill="#ff2a85" filter="url(#pinkGlow)" />
+            <circle cx="0" cy="0" r="5" fill="#ff2a85" />
             <circle cx="0" cy="0" r="2" fill="#ffffff" />
             <!-- Tag Callout Box (Offset safely away from center) -->
-            <rect id="radarTagRect" x="8" y="-18" width="80" height="22" rx="4" fill="rgba(16,8,28,0.9)" stroke="#ff71ce" stroke-width="0.8" />
-            <text x="12" y="-8" fill="#ffffff" font-size="6.5" font-weight="900" font-family="var(--font-mono)">STAND: <tspan id="radarDistTag">140.0 FT</tspan></text>
-            <text x="12" y="0" fill="#00f0ff" font-size="6" font-weight="800" font-family="var(--font-mono)">RSSI: <tspan id="radarRssiTag">-42 dBm</tspan></text>
+            <rect id="radarTagRect" x="10" y="-22" width="76" height="20" rx="4" fill="rgba(16,8,28,0.92)" stroke="#ff71ce" stroke-width="0.8" />
+            <text x="14" y="-12" fill="#ffffff" font-size="6.5" font-weight="900" font-family="var(--font-mono)">STAND: <tspan id="radarDistTag">2.1 FT</tspan></text>
+            <text x="14" y="-4" fill="#00f0ff" font-size="6" font-weight="800" font-family="var(--font-mono)">RSSI: <tspan id="radarRssiTag">-31 dBm</tspan></text>
           </g>
         </svg>
 
@@ -879,7 +873,7 @@
           <!-- Gauge Background Arc -->
           <path d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="11" stroke-linecap="round" />
           <!-- Animated RF Arc Fill -->
-          <path id="svgRfArc" d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="url(#rfArcGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="400" stroke-dashoffset="150" filter="url(#pinkGlow)" />
+          <path id="svgRfArc" d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="url(#rfArcGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="400" stroke-dashoffset="120" />
           
           <!-- Tick Marks & dBm Labels -->
           <g font-size="7.5" fill="var(--text-muted)" font-family="var(--font-mono)" text-anchor="middle">
@@ -892,7 +886,7 @@
           </g>
 
           <!-- Needle Indicator -->
-          <g id="svgRfNeedleGroup" transform="rotate(45 125 105)">
+          <g id="svgRfNeedleGroup" transform="rotate(130 125 105)" style="will-change: transform;">
             <line x1="125" y1="105" x2="125" y2="30" stroke="#00f0ff" stroke-width="2.8" stroke-linecap="round" />
             <circle cx="125" cy="105" r="7" fill="#00f0ff" />
             <circle cx="125" cy="105" r="3.5" fill="#ffffff" />
@@ -901,7 +895,7 @@
 
         <!-- Digital RF Center Readout -->
         <div class="gauge-center-text" style="bottom: 12px;">
-          <div class="gauge-val-huge" id="valRssi" style="color: var(--cyan-cyber); margin-bottom: 2px;">-42</div>
+          <div class="gauge-val-huge" id="valRssi" style="color: var(--cyan-cyber); margin-bottom: 2px;">-31</div>
           <div class="gauge-unit">RECEIVED RSSI (DBM)</div>
         </div>
       </div>
@@ -910,7 +904,7 @@
       <div class="gauge-footer-stats">
         <div class="stat-row">
           <span class="stat-lbl">SAFETY MARGIN</span>
-          <span class="stat-num" id="valMarginDb" style="color: var(--green-status);">+55 dB</span>
+          <span class="stat-num" id="valMarginDb" style="color: var(--green-status);">+66 dB</span>
         </div>
         <div class="stat-row">
           <span class="stat-lbl">RX SENSITIVITY</span>
@@ -968,21 +962,21 @@
             <td><strong>H</strong></td>
             <td>160.01 – 320 N·s</td>
             <td>50 ft (15 m)</td>
-            <td>+90.0 ft</td>
-            <td><span class="nfpa-badge nfpa-pass">PASS</span></td>
+            <td>-47.9 ft (Desk)</td>
+            <td><span class="nfpa-badge" style="background: rgba(251,191,36,0.15); color: var(--amber-caution);">BENCH TEST</span></td>
           </tr>
           <tr class="active-row">
             <td><strong>J ★</strong></td>
             <td>640.01 – 1,280 N·s</td>
             <td><strong>100 ft (30 m)</strong></td>
-            <td><strong id="tbMarginJ">+40.0 ft</strong></td>
-            <td><span class="nfpa-badge nfpa-pass" id="badgeJStatus">💖 COMPLIANT</span></td>
+            <td><strong id="tbMarginJ">-97.9 ft</strong></td>
+            <td><span class="nfpa-badge" id="badgeJStatus" style="background: rgba(251,191,36,0.18); color: var(--amber-caution);">⚠ BENCH (2 FT)</span></td>
           </tr>
           <tr>
             <td><strong>K</strong></td>
             <td>1,280.01 – 2,560 N·s</td>
             <td>200 ft (61 m)</td>
-            <td>+140.0 ft max</td>
+            <td>+140.0 ft field</td>
             <td><span class="nfpa-badge nfpa-pass">QUALIFIED</span></td>
           </tr>
           <tr>
@@ -1058,7 +1052,7 @@
         const gain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -1076,13 +1070,20 @@
         osc.frequency.setValueAtTime(150, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(650, audioCtx.currentTime + 0.3);
         osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 1.8);
-        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.10, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.8);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
         osc.stop(audioCtx.currentTime + 1.8);
       } catch(e) {}
+    }
+
+    // Calibrated Log-Distance Model (Matches 2 ft desk at -31 dBm)
+    function calculateDistance(rssi) {
+      const ratio = (-35.0 - rssi) / 22.0;
+      const dist_m = Math.pow(10, ratio);
+      return Math.max(1.5, dist_m * 3.28084);
     }
 
     // Rolling Charts Data Buffer (60 points)
@@ -1155,12 +1156,24 @@
       }
     });
 
-    // Telemetry State
+    // Telemetry State & Buffering Engine
     let peakThrust = 0;
     let maxNozzle = 72;
     let packetCount = 0;
     let flightLog = [];
     let isBurning = false;
+
+    let pendingPacket = null;
+    let isDirty = false;
+    let isTabVisible = !document.hidden;
+
+    // Page Visibility Optimization: Pause rendering when tab is hidden to save 100% CPU
+    document.addEventListener('visibilitychange', () => {
+      isTabVisible = !document.hidden;
+      if (isTabVisible) {
+        requestAnimationFrame(renderLoop);
+      }
+    });
 
     // SVG Gauge Updaters
     function setThrustGauge(lbf) {
@@ -1210,27 +1223,28 @@
       document.getElementById('hdrMargin').innerText = '+' + margin + ' dB';
 
       // Update Radar Target position (Center: 180, 125, max r=100 for 320ft)
-      const radDist = Math.max(12, Math.min(100, (distFt / 320) * 100));
-      const angle = -1.0; // radians (~60 deg up-right)
+      const radDist = Math.max(6, Math.min(100, (distFt / 320) * 100));
+      const angle = -1.0;
       const targetX = 180 + radDist * Math.cos(angle);
       const targetY = 125 + radDist * Math.sin(angle);
       document.getElementById('radarTargetBlip').setAttribute('transform', `translate(${targetX}, ${targetY})`);
       document.getElementById('radarDistTag').innerText = distFt.toFixed(1) + ' FT';
       document.getElementById('radarRssiTag').innerText = clamped + ' dBm';
 
-      // Ensure tag box doesn't overlap bunker when close
+      // Tag Callout box position
       const tagRect = document.getElementById('radarTagRect');
-      if (radDist < 25) {
+      if (radDist < 20) {
         tagRect.setAttribute('x', '10');
-        tagRect.setAttribute('y', '-25');
+        tagRect.setAttribute('y', '-22');
       } else {
         tagRect.setAttribute('x', '8');
         tagRect.setAttribute('y', '-18');
       }
 
       // Distance labels
+      const distDesc = distFt < 5.0 ? ' (DESK)' : ' LOS';
       document.getElementById('lblRangeFt').innerText = distFt.toFixed(1);
-      document.getElementById('radarStandoffTag').innerText = distFt.toFixed(0) + ' FT LOS';
+      document.getElementById('radarStandoffTag').innerText = distFt.toFixed(1) + ' FT' + distDesc;
 
       // NFPA compliance calculation
       const marginJ = distFt - 100.0;
@@ -1245,6 +1259,15 @@
         badgeJ.innerText = '💖 COMPLIANT';
         annunNfpa.innerText = '💖 COMPLIANT';
         annunNfpa.style.color = '#c084fc';
+      } else if (distFt < 5.0) {
+        tbMargin.innerText = marginJ.toFixed(1) + ' ft';
+        tbMargin.style.color = '#fbbf24';
+        badgeJ.className = 'nfpa-badge';
+        badgeJ.style.background = 'rgba(251,191,36,0.18)';
+        badgeJ.style.color = '#fbbf24';
+        badgeJ.innerText = '⚠ BENCH TEST (2 FT)';
+        annunNfpa.innerText = '⚠ BENCH / NEAR-FIELD';
+        annunNfpa.style.color = '#fbbf24';
       } else {
         tbMargin.innerText = marginJ.toFixed(1) + ' ft';
         tbMargin.style.color = '#f43f5e';
@@ -1257,39 +1280,58 @@
       }
     }
 
-    // Process new incoming telemetry frame
+    // Packet receiver: buffers data without touching DOM synchronously
     function handleTelemetryPacket(d) {
       packetCount++;
-      document.getElementById('lblPacketTotal').innerText = packetCount.toLocaleString();
-
-      setThrustGauge(d.thrust);
-      setRfGauge(d.rssi, d.dist_ft);
-
-      if (d.temp_nozzle > maxNozzle) {
-        maxNozzle = d.temp_nozzle;
-        document.getElementById('lblMaxNozzle').innerText = maxNozzle.toFixed(1) + '°F';
+      // Calculate calibrated distance if not provided or uncalibrated
+      if (!d.dist_ft || d.dist_ft > 10 && d.rssi > -35) {
+        d.dist_ft = calculateDistance(d.rssi);
+        d.dist_m = d.dist_ft * 0.3048;
       }
-
-      // Update Chart Datasets
-      thrustSeries.push(d.thrust);
-      thrustSeries.shift();
-      nozzleSeries.push(d.temp_nozzle);
-      nozzleSeries.shift();
-      liveChart.update();
-
-      // Audio cues
-      if (d.thrust > 5.0 && !isBurning) {
-        isBurning = true;
-        playIgnitionAudio();
-      } else if (d.thrust < 1.0 && isBurning) {
-        isBurning = false;
-        playBeep(1200, 0.2, 'sine');
-      }
-
+      pendingPacket = d;
+      isDirty = true;
       flightLog.push(d);
     }
 
-    // Mission Clock updater
+    // High-performance requestAnimationFrame render loop (capping at 60 FPS, skipping redundant renders)
+    function renderLoop() {
+      if (!isTabVisible) return;
+
+      if (isDirty && pendingPacket) {
+        isDirty = false;
+        const d = pendingPacket;
+
+        document.getElementById('lblPacketTotal').innerText = packetCount.toLocaleString();
+        setThrustGauge(d.thrust);
+        setRfGauge(d.rssi, d.dist_ft);
+
+        if (d.temp_nozzle > maxNozzle) {
+          maxNozzle = d.temp_nozzle;
+          document.getElementById('lblMaxNozzle').innerText = maxNozzle.toFixed(1) + '°F';
+        }
+
+        thrustSeries.push(d.thrust);
+        thrustSeries.shift();
+        nozzleSeries.push(d.temp_nozzle);
+        nozzleSeries.shift();
+
+        // liveChart.update('none') bypasses all layout recalculations and animation frames
+        liveChart.update('none');
+
+        if (d.thrust > 5.0 && !isBurning) {
+          isBurning = true;
+          playIgnitionAudio();
+        } else if (d.thrust < 1.0 && isBurning) {
+          isBurning = false;
+          playBeep(1200, 0.2, 'sine');
+        }
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+    requestAnimationFrame(renderLoop);
+
+    // Mission Clock updater (1 Hz)
     setInterval(() => {
       const now = new Date();
       document.getElementById('clockUtc').innerText = now.toTimeString().split(' ')[0] + ' EST';
@@ -1345,8 +1387,8 @@
 
         let nozzle = 72 + Math.min(380, step * 9.5);
         let casing = 72 + Math.min(85, step * 2.1);
-        let rssi = -42 + Math.floor(Math.random() * 4 - 2);
-        let dist = 142.5;
+        let rssi = -31 + Math.floor(Math.random() * 3 - 1);
+        let dist = 2.1;
 
         handleTelemetryPacket({
           timestamp_ms: t_ms,
@@ -1366,7 +1408,7 @@
       }, 50);
     }
 
-    // Simulation: Dynamic Walk Out Test (15 ft -> 320 ft)
+    // Simulation: Dynamic Walk Out Test (2 ft desk -> 320 ft field)
     let simWalkInterval = null;
     function simulateWalkOut() {
       initAudio();
@@ -1377,11 +1419,11 @@
       simWalkInterval = setInterval(() => {
         walkStep++;
         const progress = walkStep / totalWalkSteps;
-        const currentDist = progress <= 0.6 ? 15 + (progress / 0.6) * 305 : 320 - ((progress - 0.6) / 0.4) * 295;
+        const currentDist = progress <= 0.6 ? 2.1 + (progress / 0.6) * 318 : 320 - ((progress - 0.6) / 0.4) * 318;
         
-        const dist_m = currentDist * 0.3048;
-        const fspl = 40.0 + 20.0 * Math.log10(Math.max(1.0, dist_m));
-        const rssi = Math.round(24.0 - fspl + (Math.random() * 3 - 1.5));
+        // Log-distance RSSI calculation
+        const ratio = Math.log10(currentDist * 0.3048);
+        const rssi = Math.round(-35.0 - (ratio * 22.0) + (Math.random() * 2 - 1));
 
         handleTelemetryPacket({
           timestamp_ms: walkStep * 100,
@@ -1391,10 +1433,10 @@
           temp_ambient: 72.0,
           rssi: rssi,
           dist_ft: currentDist,
-          dist_m: dist_m
+          dist_m: currentDist * 0.3048
         });
 
-        playBeep(440 + currentDist * 2, 0.04, 'triangle');
+        playBeep(440 + currentDist * 1.5, 0.04, 'triangle');
 
         if (walkStep >= totalWalkSteps) {
           clearInterval(simWalkInterval);
@@ -1420,8 +1462,9 @@
       a.click();
     }
 
+    // Set initial calibrated state on load (2.1 ft desk reading at -31 dBm)
     setThrustGauge(0.0);
-    setRfGauge(-42, 140.0);
+    setRfGauge(-31, 2.1);
   </script>
 </body>
 </html>
