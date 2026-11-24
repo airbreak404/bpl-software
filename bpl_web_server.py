@@ -11,10 +11,12 @@ Features:
   - High-performance, zero-dependency Python HTTP Server
   - Native Server-Sent Events (SSE) streaming live telemetry at 25 Hz
   - Internal 200 Hz DAQ sampling with sequence & packet drop tracking
+  - Explicit dual-link hardware detection:
+      * Ground Receiver USB Status (Connected / Disconnected / Port)
+      * Test Stand Wireless RF Status (Active / Standby / Age)
   - Authoritative server-side numerical impulse integration & burn timing
   - Live hardware frequency measurement (e.g. 199.8 Hz ESP-NOW)
   - Physically calibrated Log-Distance RF propagation model (1.5 ft -> 350+ ft)
-  - Zero-glitch, memory-bounded telemetry broadcast
 ==============================================================================
 """
 
@@ -47,6 +49,16 @@ current_burn_duration_s = 0.0
 last_burn_duration_s = 0.0
 last_thrust_sample_time = None
 
+# Hardware Link States
+is_receiver_connected = False
+active_serial_port = None
+last_hardware_packet_time = 0.0
+total_hw_rx = 0
+total_hw_lost = 0
+last_hw_timestamp_ms = None
+last_packet_arrival_time = None
+rolling_hz = 200.0
+
 latest_data = {
     "timestamp_ms": 0,
     "thrust": 0.0,
@@ -61,6 +73,10 @@ latest_data = {
     "rssi": -26,
     "dist_ft": 1.5,
     "dist_m": 0.46,
+    "receiver_connected": False,
+    "receiver_port": "Searching...",
+    "stand_online": False,
+    "last_rf_age_s": 999.0,
     "hardware_active": False,
     "packet_drop_rate": 0.0,
     "packets_rx": 0,
@@ -73,18 +89,9 @@ latest_data = {
     "motor_class": "STANDBY",
     "stand_mac": "44:bd:8d:71:94:1c",
     "rx_mac": "14:c1:9f:3b:e5:4c",
-    "rx_port": "Searching...",
     "rx_sensitivity": -97,
     "tx_eirp": 24.0
 }
-
-last_hardware_packet_time = 0.0
-total_hw_rx = 0
-total_hw_lost = 0
-last_hw_timestamp_ms = None
-last_packet_arrival_time = None
-rolling_hz = 200.0
-active_serial_port = None
 
 
 def get_motor_class_letter(impulse_ns):
@@ -151,7 +158,7 @@ def broadcast_packet(packet):
 
 def serial_reader_thread():
     global last_hardware_packet_time, total_hw_rx, total_hw_lost, last_hw_timestamp_ms
-    global last_packet_arrival_time, rolling_hz, active_serial_port
+    global last_packet_arrival_time, rolling_hz, active_serial_port, is_receiver_connected
     global all_time_peak_thrust, all_time_max_nozzle, burn_count, is_burning
     global burn_start_time, current_burn_impulse_ns, last_burn_impulse_ns
     global current_burn_duration_s, last_burn_duration_s, last_thrust_sample_time
@@ -160,9 +167,10 @@ def serial_reader_thread():
 
     while True:
         port = find_serial_port()
-        active_serial_port = port
         if not port:
-            time.sleep(1.0)
+            is_receiver_connected = False
+            active_serial_port = None
+            time.sleep(0.5)
             continue
 
         try:
@@ -170,11 +178,14 @@ def serial_reader_thread():
             ser.dtr = False
             ser.rts = False
             ser.reset_input_buffer()
+            is_receiver_connected = True
+            active_serial_port = port
             print(f"\033[38;5;48m[✓] Connected to ESP32 Receiver on {port} (115200 baud)\033[0m")
 
             while True:
                 raw = ser.readline()
                 if not raw:
+                    # Serial read timed out (no RF packet received over air), but USB is still plugged in
                     continue
 
                 line = raw.decode("utf-8", errors="replace").strip()
@@ -197,6 +208,7 @@ def serial_reader_thread():
                             inst_hz = 1.0 / dt_arr
                             rolling_hz = rolling_hz * 0.9 + inst_hz * 0.1
                     last_packet_arrival_time = now
+                    last_hardware_packet_time = now
 
                     # Authoritative Server-Side Burn State Machine & Numerical Integration
                     with state_lock:
@@ -263,6 +275,10 @@ def serial_reader_thread():
                         "rssi": rssi,
                         "dist_ft": round(dist_ft, 1),
                         "dist_m": round(dist_m, 2),
+                        "receiver_connected": True,
+                        "receiver_port": port,
+                        "stand_online": True,
+                        "last_rf_age_s": round(time.time() - last_hardware_packet_time, 2),
                         "hardware_active": True,
                         "packet_drop_rate": round(drop_rate, 2),
                         "packets_rx": total_hw_rx,
@@ -275,14 +291,11 @@ def serial_reader_thread():
                         "motor_class": get_motor_class_letter(display_impulse),
                         "stand_mac": "44:bd:8d:71:94:1c",
                         "rx_mac": "14:c1:9f:3b:e5:4c",
-                        "rx_port": port,
                         "rx_sensitivity": -97,
                         "tx_eirp": 24.0
                     }
-                    last_hardware_packet_time = now
 
                     # Decimate broadcast to web clients at 25 Hz (40 ms)
-                    # Guarantees zero DOM thrashing and silky-smooth 60 FPS in browsers
                     if now - last_broadcast_time >= 0.040:
                         last_broadcast_time = now
                         broadcast_packet(packet)
@@ -291,25 +304,30 @@ def serial_reader_thread():
                     continue
 
         except Exception as e:
+            # USB unplugged or serial read failure
+            is_receiver_connected = False
             active_serial_port = None
-            time.sleep(1.0)
+            time.sleep(0.5)
 
 
 def background_heartbeat_thread():
-    """Generates continuous smooth 25 Hz telemetry ticker when hardware is in standby or disconnected."""
-    global last_hardware_packet_time
+    """Generates continuous smooth 25 Hz telemetry ticker when hardware is in standby, silent, or disconnected."""
+    global last_hardware_packet_time, is_receiver_connected, active_serial_port
     t_start = time.time()
     tick = 0
     while True:
         time.sleep(0.040)  # 25 Hz smooth refresh rate
         tick += 1
 
-        # If real hardware delivered a packet within last 0.4s, let hardware drive
-        if time.time() - last_hardware_packet_time < 0.4:
+        # If real hardware delivered a packet within last 0.3s, let hardware drive
+        if time.time() - last_hardware_packet_time < 0.3:
             continue
 
-        elapsed_ms = int((time.time() - t_start) * 1000)
+        now = time.time()
+        elapsed_ms = int((now - t_start) * 1000)
         dist_ft, dist_m = estimate_calibrated_distance(-31)
+        rf_age = round(now - last_hardware_packet_time, 1) if last_hardware_packet_time > 0 else 999.0
+        stand_is_live = (rf_age < 1.2)
 
         packet = {
             "timestamp_ms": elapsed_ms,
@@ -325,10 +343,14 @@ def background_heartbeat_thread():
             "rssi": -31,
             "dist_ft": round(dist_ft, 1),
             "dist_m": round(dist_m, 2),
+            "receiver_connected": is_receiver_connected,
+            "receiver_port": active_serial_port or "None (Searching USB)",
+            "stand_online": stand_is_live,
+            "last_rf_age_s": rf_age,
             "hardware_active": False,
             "packet_drop_rate": 0.0,
-            "packets_rx": tick,
-            "packets_lost": 0,
+            "packets_rx": total_hw_rx if total_hw_rx > 0 else tick,
+            "packets_lost": total_hw_lost,
             "stream_hz": 200.0,
             "burn_active": False,
             "burn_count": burn_count,
@@ -337,7 +359,6 @@ def background_heartbeat_thread():
             "motor_class": get_motor_class_letter(last_burn_impulse_ns),
             "stand_mac": "44:bd:8d:71:94:1c",
             "rx_mac": "14:c1:9f:3b:e5:4c",
-            "rx_port": active_serial_port or "Standalone Simulation",
             "rx_sensitivity": -97,
             "tx_eirp": 24.0
         }

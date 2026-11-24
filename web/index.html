@@ -244,6 +244,7 @@
     .annun-card.active-green::before { background: var(--green-status); }
     .annun-card.active-purple::before { background: var(--purple-accent); }
     .annun-card.active-amber::before { background: var(--amber-caution); }
+    .annun-card.active-hazard::before { background: var(--red-hazard); }
 
     .annun-lbl {
       font-size: 8.5px;
@@ -615,16 +616,26 @@
     <!-- Center Mission Clock & Stream Specs -->
     <div class="header-center-telemetry">
       <div class="telemetry-pill">
+        <span class="telemetry-pill-lbl">RECEIVER USB</span>
+        <span class="telemetry-pill-val" id="hdrRxStatus" style="color: var(--green-status); display: flex; align-items: center; gap: 5px;">
+          <span class="status-ping"></span> CONNECTED
+        </span>
+      </div>
+      <div class="telemetry-pill">
         <span class="telemetry-pill-lbl">MISSION TIME</span>
         <span class="telemetry-pill-val" id="clockUtc">--:--:-- EST</span>
       </div>
-      <div class="telemetry-pill" style="min-width: 140px;">
+      <div class="telemetry-pill" style="min-width: 135px;">
         <span class="telemetry-pill-lbl">STREAM PROTOCOL</span>
         <span class="telemetry-pill-val" id="hdrProtocol" style="color: var(--pink-glow);">200.0 Hz ESP-NOW</span>
       </div>
       <div class="telemetry-pill">
         <span class="telemetry-pill-lbl">LINK MARGIN</span>
         <span class="telemetry-pill-val" id="hdrMargin" style="color: var(--green-status);">+70 dB</span>
+      </div>
+      <div class="telemetry-pill">
+        <span class="telemetry-pill-lbl">BURNS LOGGED</span>
+        <span class="telemetry-pill-val" id="hdrBurnCount" style="color: var(--pink-soft);">0 CYCLES</span>
       </div>
     </div>
 
@@ -642,48 +653,60 @@
     </div>
   </header>
 
-  <!-- Top Annunciator Banner (6 Dynamic Channels) -->
+  <!-- Top Annunciator Banner (Dedicated Hardware & RF Channels) -->
   <div class="annunciator-bar">
-    <div class="annun-card active-green">
-      <span class="annun-lbl">STAND COMM STATUS</span>
-      <span class="annun-val" id="lblLinkState" style="color: var(--green-status);">
-        <span class="status-ping"></span> ONLINE
+    <!-- Card 1: Ground Receiver Hardware USB Connection -->
+    <div class="annun-card active-green" id="cardReceiver">
+      <span class="annun-lbl">GROUND RECEIVER (USB DAQ)</span>
+      <span class="annun-val" id="lblReceiverState" style="color: var(--green-status);">
+        <span class="status-ping"></span> CONNECTED
       </span>
+      <span id="lblReceiverPort" style="font-size: 8px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">/dev/cu.usbmodem5CBC0659351</span>
     </div>
 
+    <!-- Card 2: Stand Wireless RF Link (ESP-NOW) -->
+    <div class="annun-card active-cyan" id="cardStand">
+      <span class="annun-lbl">STAND RF LINK (ESP-NOW)</span>
+      <span class="annun-val" id="lblStandRfState" style="color: var(--cyan-cyber);">
+        <span class="status-ping" style="background: var(--cyan-cyber); box-shadow: 0 0 8px var(--cyan-cyber);"></span> 200 Hz LINK ACTIVE
+      </span>
+      <span id="lblStandRfSub" style="font-size: 8px; color: var(--pink-soft); font-family: var(--font-mono); margin-top: 2px;">MAC: 44:bd:8d:71:94:1c</span>
+    </div>
+
+    <!-- Card 3: Calculated Range -->
     <div class="annun-card active-cyan">
       <span class="annun-lbl">CALCULATED RANGE</span>
       <span class="annun-val" style="color: var(--cyan-cyber);">
         <span id="lblRangeFt">1.5</span> <span style="font-size: 9px; color: var(--text-muted);" id="lblRangeUnit">FT (DESK BENCH)</span>
       </span>
+      <span id="lblPathLossSub" style="font-size: 8px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">PATH LOSS: -26 dBm</span>
     </div>
 
-    <div class="annun-card active-amber">
+    <!-- Card 4: NFPA 1127 J-Class Standoff Perimeter -->
+    <div class="annun-card active-amber" id="cardNfpa">
       <span class="annun-lbl">NFPA 1127 J-CLASS (100 FT)</span>
       <span class="annun-val" style="color: var(--amber-caution);" id="lblNfpaStatus">
         ⚠ BENCH / NEAR-FIELD
       </span>
+      <span style="font-size: 8px; color: var(--amber-caution); font-family: var(--font-mono); margin-top: 2px;">MIN STANDOFF: 100 FT</span>
     </div>
 
+    <!-- Card 5: Peak Thrust Force Recorded -->
     <div class="annun-card">
       <span class="annun-lbl">PEAK THRUST FORCE</span>
       <span class="annun-val" style="color: var(--pink-glow);">
         <span id="lblPeakThrust">0.0</span> <span style="font-size: 9px; color: var(--text-muted);" id="lblPeakUnit">LBF (0 N)</span>
       </span>
+      <span style="font-size: 8px; color: var(--pink-soft); font-family: var(--font-mono); margin-top: 2px;">AEROTECH J425R RELOAD</span>
     </div>
 
-    <div class="annun-card active-amber">
+    <!-- Card 6: Nozzle Thermocouple Temperature (Live & Peak) -->
+    <div class="annun-card active-amber" id="cardNozzle">
       <span class="annun-lbl">NOZZLE TEMP (LIVE / MAX)</span>
       <span class="annun-val" style="color: var(--amber-caution);">
         <span id="lblLiveNozzle">72.0°F</span> <span style="font-size: 8.5px; color: var(--text-muted); font-weight: 700;">(PEAK <span id="lblMaxNozzle">72.0°F</span>)</span>
       </span>
-    </div>
-
-    <div class="annun-card">
-      <span class="annun-lbl">TOTAL BURNS LOGGED</span>
-      <span class="annun-val">
-        <span id="lblBurnCount">0</span> <span style="font-size: 9px; color: var(--text-muted);">CYCLES</span>
-      </span>
+      <span style="font-size: 8px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">MAX31856 SPI AMPLIFIER</span>
     </div>
   </div>
 
@@ -965,9 +988,8 @@
   <!-- Bottom Hardware & Telemetry Bar -->
   <footer>
     <div class="footer-tags">
+      <span id="footerRxStatus">Receiver: <strong style="color: var(--green-status);" id="lblFooterRxState">🟢 CONNECTED</strong> (<span id="lblRxPort">/dev/cu.usbmodem5CBC0659351</span> @ 115200)</span>
       <span>Stand MAC: <strong id="lblStandMac">44:bd:8d:71:94:1c</strong></span>
-      <span>Receiver MAC: <strong id="lblRxMac">14:c1:9f:3b:e5:4c</strong></span>
-      <span>Port: <strong id="lblRxPort">/dev/cu.usbmodem5CBC0659351</strong></span>
       <span>Antenna: <strong id="lblAntennaConfig">IPEX 0Ω Mod (+24 dBm EIRP)</strong></span>
       <span>Packets Processed: <strong id="lblPacketTotal">0</strong></span>
     </div>
@@ -1387,18 +1409,90 @@
         }
       }
 
-      // Hardware Active Indicator & Metadata
-      if (d.hardware_active) {
-        document.getElementById('lblLinkState').innerHTML = `<span class="status-ping"></span> ONLINE (ESP32-S3 UART)`;
-        document.getElementById('lblLinkState').style.color = 'var(--green-status)';
+      // 1. Explicit Ground Receiver Hardware USB Connection Status
+      const cardRx = document.getElementById('cardReceiver');
+      const lblRxState = document.getElementById('lblReceiverState');
+      const lblRxPort = document.getElementById('lblReceiverPort');
+      const hdrRx = document.getElementById('hdrRxStatus');
+      const footerRx = document.getElementById('lblFooterRxState');
+
+      if (d.receiver_connected) {
+        if (cardRx) cardRx.className = "annun-card active-green";
+        if (lblRxState) {
+          lblRxState.innerHTML = `<span class="status-ping"></span> CONNECTED`;
+          lblRxState.style.color = "var(--green-status)";
+        }
+        if (lblRxPort) {
+          lblRxPort.innerText = `${d.receiver_port || '/dev/cu.usbmodem5CBC0659351'} (115200)`;
+          lblRxPort.style.color = "var(--text-muted)";
+        }
+        if (hdrRx) {
+          hdrRx.innerHTML = `<span class="status-ping"></span> CONNECTED`;
+          hdrRx.style.color = "var(--green-status)";
+        }
+        if (footerRx) {
+          footerRx.innerHTML = `🟢 CONNECTED`;
+          footerRx.style.color = "var(--green-status)";
+        }
       } else {
-        document.getElementById('lblLinkState').innerHTML = `<span class="status-ping" style="background: var(--cyan-cyber); box-shadow: 0 0 8px var(--cyan-cyber);"></span> ONLINE (ARMED)`;
-        document.getElementById('lblLinkState').style.color = 'var(--cyan-cyber)';
+        if (cardRx) cardRx.className = "annun-card active-hazard";
+        if (lblRxState) {
+          lblRxState.innerHTML = `<span class="status-ping" style="background: var(--red-hazard); box-shadow: 0 0 8px var(--red-hazard);"></span> NOT DETECTED`;
+          lblRxState.style.color = "var(--red-hazard)";
+        }
+        if (lblRxPort) {
+          lblRxPort.innerText = `PLUG IN GROUND USB-C`;
+          lblRxPort.style.color = "var(--red-hazard)";
+        }
+        if (hdrRx) {
+          hdrRx.innerHTML = `<span class="status-ping" style="background: var(--red-hazard); box-shadow: 0 0 8px var(--red-hazard);"></span> UNPLUGGED`;
+          hdrRx.style.color = "var(--red-hazard)";
+        }
+        if (footerRx) {
+          footerRx.innerHTML = `🔴 DISCONNECTED`;
+          footerRx.style.color = "var(--red-hazard)";
+        }
+      }
+
+      // 2. Explicit Test Stand Wireless RF Connection Status
+      const cardStand = document.getElementById('cardStand');
+      const lblStandState = document.getElementById('lblStandRfState');
+      const lblStandSub = document.getElementById('lblStandRfSub');
+
+      if (d.receiver_connected && d.stand_online) {
+        if (cardStand) cardStand.className = "annun-card active-green";
+        if (lblStandState) {
+          lblStandState.innerHTML = `<span class="status-ping"></span> 200 Hz LINK ACTIVE`;
+          lblStandState.style.color = "var(--green-status)";
+        }
+        if (lblStandSub) {
+          lblStandSub.innerText = `MAC: ${d.stand_mac || '44:bd:8d:71:94:1c'} (${d.rssi} dBm)`;
+          lblStandSub.style.color = "var(--pink-soft)";
+        }
+      } else if (d.receiver_connected && !d.stand_online) {
+        if (cardStand) cardStand.className = "annun-card active-amber";
+        if (lblStandState) {
+          lblStandState.innerHTML = `<span class="status-ping" style="background: var(--amber-caution); box-shadow: 0 0 8px var(--amber-caution);"></span> STANDBY (NO RF)`;
+          lblStandState.style.color = "var(--amber-caution)";
+        }
+        if (lblStandSub) {
+          lblStandSub.innerText = `WAITING FOR STAND TX (${d.last_rf_age_s ? d.last_rf_age_s + 's' : 'IDLE'})`;
+          lblStandSub.style.color = "var(--amber-caution)";
+        }
+      } else {
+        if (cardStand) cardStand.className = "annun-card";
+        if (lblStandState) {
+          lblStandState.innerHTML = `OFFLINE`;
+          lblStandState.style.color = "var(--text-muted)";
+        }
+        if (lblStandSub) {
+          lblStandSub.innerText = `AWAITING USB RECEIVER`;
+          lblStandSub.style.color = "var(--text-muted)";
+        }
       }
 
       if (d.rx_port) document.getElementById('lblRxPort').innerText = d.rx_port;
       if (d.stand_mac) document.getElementById('lblStandMac').innerText = d.stand_mac;
-      if (d.rx_mac) document.getElementById('lblRxMac').innerText = d.rx_mac;
 
       // Total Packets Processed (hardware count when available)
       const totalRx = d.packets_rx ? d.packets_rx : packetCount;
@@ -1414,6 +1508,8 @@
       }
       if (d.burn_count !== undefined) {
         document.getElementById('lblBurnCount').innerText = d.burn_count;
+        const hdrBurns = document.getElementById('hdrBurnCount');
+        if (hdrBurns) hdrBurns.innerText = `${d.burn_count} CYCLES`;
       }
       if (d.peak_thrust !== undefined && d.peak_thrust > peakThrust) {
         peakThrust = d.peak_thrust;
@@ -1494,12 +1590,14 @@
         } catch(e) {}
       };
       evtSource.onerror = function() {
-        document.getElementById('lblLinkState').innerHTML = `<span class="status-ping" style="background: var(--amber-caution);"></span> RECONNECTING`;
-        document.getElementById('lblLinkState').style.color = '#fbbf24';
+        const hdr = document.getElementById('hdrRxStatus');
+        if (hdr) {
+          hdr.innerHTML = `<span class="status-ping" style="background: var(--amber-caution);"></span> RECONNECTING`;
+          hdr.style.color = '#fbbf24';
+        }
       };
       evtSource.onopen = function() {
-        document.getElementById('lblLinkState').innerHTML = `<span class="status-ping"></span> ONLINE`;
-        document.getElementById('lblLinkState').style.color = '#10b981';
+        // SSE connection opened
       };
     }
     connectSse();
