@@ -8,8 +8,8 @@
   <style>
     :root {
       --bg-base: #06030c;
-      --bg-surface: rgba(18, 10, 32, 0.88);
-      --bg-surface-elevated: rgba(28, 15, 52, 0.94);
+      --bg-surface: #120a20;
+      --bg-surface-elevated: #1a0e2e;
       --border-glow: rgba(255, 42, 133, 0.35);
       --border-active: rgba(255, 113, 206, 0.8);
       --pink-primary: #ff2a85;
@@ -56,18 +56,6 @@
       gap: 10px;
     }
 
-    /* Lightweight scanline overlay */
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%);
-      background-size: 100% 3px;
-      z-index: 9999;
-      pointer-events: none;
-      opacity: 0.3;
-    }
-
     /* Mission Control Header */
     header {
       display: flex;
@@ -77,8 +65,7 @@
       border: 1px solid var(--border-glow);
       border-radius: 14px;
       padding: 8px 18px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       position: relative;
       flex-shrink: 0;
     }
@@ -108,7 +95,6 @@
       justify-content: center;
       font-size: 20px;
       box-shadow: 0 0 12px rgba(255, 42, 133, 0.4);
-      transform: translateZ(0);
     }
 
     .brand-titles h1 {
@@ -172,6 +158,7 @@
       font-weight: 800;
       color: var(--cyan-cyber);
       letter-spacing: 0.4px;
+      font-variant-numeric: tabular-nums;
     }
 
     .header-controls {
@@ -195,7 +182,6 @@
       gap: 6px;
       box-shadow: 0 3px 14px rgba(255, 42, 133, 0.35);
       transition: transform 0.15s ease, box-shadow 0.15s ease;
-      transform: translateZ(0);
     }
 
     .btn:hover {
@@ -241,7 +227,6 @@
       border: 1px solid var(--border-glow);
       border-radius: 10px;
       padding: 6px 12px;
-      backdrop-filter: blur(16px);
       display: flex;
       flex-direction: column;
       position: relative;
@@ -278,6 +263,7 @@
       align-items: center;
       gap: 5px;
       white-space: nowrap;
+      font-variant-numeric: tabular-nums;
     }
 
     .status-ping {
@@ -286,12 +272,6 @@
       border-radius: 50%;
       background: var(--green-status);
       box-shadow: 0 0 8px var(--green-status);
-      animation: pulsePing 2s infinite;
-    }
-
-    @keyframes pulsePing {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
     }
 
     /* Main Mission Grid: Gauges & Radar Scope */
@@ -307,8 +287,7 @@
       border: 1px solid var(--border-glow);
       border-radius: 16px;
       padding: 12px 16px;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
       position: relative;
       display: flex;
       flex-direction: column;
@@ -389,6 +368,7 @@
       line-height: 1;
       letter-spacing: -1px;
       text-shadow: 0 0 16px rgba(255, 42, 133, 0.45);
+      font-variant-numeric: tabular-nums;
     }
 
     .gauge-unit {
@@ -430,6 +410,7 @@
       font-weight: 800;
       color: var(--text-bright);
       margin-top: 1px;
+      font-variant-numeric: tabular-nums;
     }
 
     /* Radar Centerpiece */
@@ -445,31 +426,19 @@
       width: 100%;
       max-width: 360px;
       height: 250px;
-      filter: drop-shadow(0 0 16px rgba(255, 42, 133, 0.2));
     }
 
-    /* Hardware-accelerated sweep with zero CPU raster overhead */
-    .radar-sweep-beam {
-      transform-origin: 180px 125px;
-      animation: radarSweep 3.5s linear infinite;
-      will-change: transform;
-      transform: translateZ(0);
+    /* Smooth Hardware Needle & Blip Transitions */
+    #svgThrustNeedleGroup, #svgRfNeedleGroup {
+      transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    @keyframes radarSweep {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    #svgThrustArc, #svgRfArc {
+      transition: stroke-dashoffset 0.22s ease;
     }
 
-    .radar-blip-pulse {
-      animation: blipPulse 1.6s ease-out infinite;
-      transform-origin: center;
-      will-change: transform, opacity;
-    }
-
-    @keyframes blipPulse {
-      0% { r: 4; opacity: 1; stroke-width: 2.5; }
-      100% { r: 16; opacity: 0; stroke-width: 1; }
+    #radarTargetBlip {
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .radar-legend {
@@ -506,7 +475,7 @@
       grid-template-columns: 1.35fr 1fr;
       gap: 12px;
       flex: 1;
-      min-height: 250px;
+      min-height: 230px;
     }
 
     .chart-panel {
@@ -515,10 +484,11 @@
     }
 
     .chart-canvas-container {
-      flex: 1;
       position: relative;
       width: 100%;
-      min-height: 180px;
+      height: 180px;
+      max-height: 180px;
+      flex-shrink: 0;
     }
 
     /* NFPA 1127 Comprehensive Compliance Table */
@@ -546,6 +516,7 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       color: var(--text-main);
       font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .nfpa-table tr.active-row {
@@ -595,7 +566,6 @@
       border: 1px solid var(--border-glow);
       border-radius: 12px;
       padding: 8px 18px;
-      backdrop-filter: blur(16px);
       font-size: 10px;
       color: var(--text-muted);
       flex-shrink: 0;
@@ -738,8 +708,8 @@
             <text x="195" y="168">120</text>
           </g>
 
-          <!-- Needle Indicator -->
-          <g id="svgThrustNeedleGroup" transform="rotate(-135 125 105)" style="will-change: transform;">
+          <!-- Needle Indicator with Smooth CSS Interpolation -->
+          <g id="svgThrustNeedleGroup" transform="rotate(-135 125 105)">
             <line x1="125" y1="105" x2="125" y2="30" stroke="#ff71ce" stroke-width="2.8" stroke-linecap="round" />
             <circle cx="125" cy="105" r="7" fill="#ff2a85" />
             <circle cx="125" cy="105" r="3.5" fill="#ffffff" />
@@ -789,8 +759,8 @@
               <stop offset="100%" stop-color="rgba(255, 42, 133, 0.0)" />
             </linearGradient>
             <radialGradient id="radarGlass" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="rgba(30, 10, 50, 0.6)" />
-              <stop offset="85%" stop-color="rgba(10, 5, 20, 0.95)" />
+              <stop offset="0%" stop-color="#1b0e2f" />
+              <stop offset="85%" stop-color="#0e0618" />
               <stop offset="100%" stop-color="rgba(255, 42, 133, 0.25)" />
             </radialGradient>
           </defs>
@@ -818,10 +788,11 @@
           <circle cx="180" cy="125" r="95" fill="none" stroke="rgba(251, 191, 36, 0.4)" stroke-width="1.2" stroke-dasharray="4,4" />
           <text x="180" y="27" fill="#fbbf24" font-size="6" font-weight="800" font-family="var(--font-mono)" text-anchor="middle">L-CLASS STANDOFF (300 FT)</text>
 
-          <!-- Rotating Radar Sweep Beam (Hardware-Accelerated) -->
-          <g class="radar-sweep-beam">
+          <!-- Native SVG Perfectly Centered Rotating Radar Beam -->
+          <g>
             <path d="M 180 125 L 290 125 A 110 110 0 0 0 258 47 Z" fill="url(#sweepGrad)" />
             <line x1="180" y1="125" x2="290" y2="125" stroke="#ff2a85" stroke-width="1.5" />
+            <animateTransform attributeName="transform" type="rotate" from="0 180 125" to="360 180 125" dur="3.5s" repeatCount="indefinite" />
           </g>
 
           <!-- Ground Station Center Blip (0 ft) -->
@@ -829,15 +800,15 @@
           <circle cx="180" cy="125" r="7" fill="none" stroke="#00f0ff" stroke-width="1" />
           <text x="180" y="139" fill="#00f0ff" font-size="6.5" font-weight="900" font-family="var(--font-mono)" text-anchor="middle">BUNKER (0 FT)</text>
 
-          <!-- Stand Transmitter Target Blip (Dynamic position updated by JS) -->
-          <g id="radarTargetBlip" transform="translate(186, 117)" style="will-change: transform;">
-            <circle class="radar-blip-pulse" cx="0" cy="0" r="8" fill="none" stroke="#ff2a85" />
+          <!-- Stand Transmitter Target Blip (Dynamic position updated by JS with smooth glide) -->
+          <g id="radarTargetBlip" transform="translate(186, 117)">
             <circle cx="0" cy="0" r="5" fill="#ff2a85" />
+            <circle cx="0" cy="0" r="8" fill="none" stroke="#ff2a85" stroke-width="1" />
             <circle cx="0" cy="0" r="2" fill="#ffffff" />
-            <!-- Tag Callout Box (Offset safely away from center) -->
-            <rect id="radarTagRect" x="10" y="-22" width="76" height="20" rx="4" fill="rgba(16,8,28,0.92)" stroke="#ff71ce" stroke-width="0.8" />
+            <!-- Tag Callout Box -->
+            <rect id="radarTagRect" x="10" y="-22" width="76" height="20" rx="4" fill="rgba(16,8,28,0.95)" stroke="#ff71ce" stroke-width="0.8" />
             <text x="14" y="-12" fill="#ffffff" font-size="6.5" font-weight="900" font-family="var(--font-mono)">STAND: <tspan id="radarDistTag">2.1 FT</tspan></text>
-            <text x="14" y="-4" fill="#00f0ff" font-size="6" font-weight="800" font-family="var(--font-mono)">RSSI: <tspan id="radarRssiTag">-31 dBm</tspan></text>
+            <text x="14" y="-4" fill="#00f0ff" font-size="6.5" font-weight="800" font-family="var(--font-mono)">RSSI: <tspan id="radarRssiTag">-31 dBm</tspan></text>
           </g>
         </svg>
 
@@ -847,7 +818,7 @@
           <div class="legend-item"><span class="legend-dot" style="background: #ff2a85;"></span> J-Class 100ft Min</div>
           <div class="legend-item"><span class="legend-dot" style="background: #a855f7;"></span> K-Class 200ft</div>
           <div class="legend-item"><span class="legend-dot" style="background: #fbbf24;"></span> L-Class 300ft</div>
-          <div class="legend-item"><span class="legend-dot" style="background: #ff71ce; box-shadow: 0 0 6px #ff71ce;"></span> Stand (TX)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #ff71ce;"></span> Stand (TX)</div>
         </div>
       </div>
     </div>
@@ -885,8 +856,8 @@
             <text x="195" y="168">-30</text>
           </g>
 
-          <!-- Needle Indicator -->
-          <g id="svgRfNeedleGroup" transform="rotate(130 125 105)" style="will-change: transform;">
+          <!-- Needle Indicator with Smooth CSS Interpolation -->
+          <g id="svgRfNeedleGroup" transform="rotate(130 125 105)">
             <line x1="125" y1="105" x2="125" y2="30" stroke="#00f0ff" stroke-width="2.8" stroke-linecap="round" />
             <circle cx="125" cy="105" r="7" fill="#00f0ff" />
             <circle cx="125" cy="105" r="3.5" fill="#ffffff" />
@@ -1079,15 +1050,15 @@
       } catch(e) {}
     }
 
-    // Calibrated Log-Distance Model (Matches 2 ft desk at -31 dBm)
+    // Calibrated Log-Distance Model (Matches 2.1 ft desk at -31 dBm)
     function calculateDistance(rssi) {
       const ratio = (-35.0 - rssi) / 22.0;
       const dist_m = Math.pow(10, ratio);
       return Math.max(1.5, dist_m * 3.28084);
     }
 
-    // Rolling Charts Data Buffer (60 points)
-    const MAX_PTS = 60;
+    // Rolling Charts Data Buffer (50 points)
+    const MAX_PTS = 50;
     const chartLabels = Array(MAX_PTS).fill('');
     const thrustSeries = Array(MAX_PTS).fill(0);
     const nozzleSeries = Array(MAX_PTS).fill(72);
@@ -1105,7 +1076,7 @@
             backgroundColor: 'rgba(255, 42, 133, 0.18)',
             borderWidth: 2.2,
             fill: true,
-            tension: 0.35,
+            tension: 0.3,
             pointRadius: 0,
             yAxisID: 'yThrust'
           },
@@ -1156,18 +1127,25 @@
       }
     });
 
-    // Telemetry State & Buffering Engine
+    // Telemetry State & Exponential Moving Average (EMA) Damping
     let peakThrust = 0;
     let maxNozzle = 72;
     let packetCount = 0;
     let flightLog = [];
     let isBurning = false;
 
-    let pendingPacket = null;
-    let isDirty = false;
+    // Smoothed values for zero-jitter rendering
+    let smoothThrust = 0.0;
+    let smoothRssi = -31.0;
+    let smoothDist = 2.1;
+
+    let targetThrust = 0.0;
+    let targetRssi = -31.0;
+    let targetDist = 2.1;
+    let targetNozzle = 72.0;
+
     let isTabVisible = !document.hidden;
 
-    // Page Visibility Optimization: Pause rendering when tab is hidden to save 100% CPU
     document.addEventListener('visibilitychange', () => {
       isTabVisible = !document.hidden;
       if (isTabVisible) {
@@ -1175,8 +1153,8 @@
       }
     });
 
-    // SVG Gauge Updaters
-    function setThrustGauge(lbf) {
+    // SVG Gauge Updaters with Smooth Degrees
+    function updateThrustGauge(lbf) {
       const clamped = Math.max(0, Math.min(120, lbf));
       const deg = -135 + (clamped / 120) * 270;
       document.getElementById('svgThrustNeedleGroup').setAttribute('transform', `rotate(${deg} 125 105)`);
@@ -1208,7 +1186,7 @@
       }
     }
 
-    function setRfGauge(rssi, distFt) {
+    function updateRfGauge(rssi, distFt) {
       const clamped = Math.max(-100, Math.min(-30, rssi));
       const ratio = (clamped - (-100)) / 70;
       const deg = -135 + ratio * 270;
@@ -1216,9 +1194,9 @@
       
       const offset = 400 - ratio * 270;
       document.getElementById('svgRfArc').style.strokeDashoffset = offset;
-      document.getElementById('valRssi').innerText = clamped;
+      document.getElementById('valRssi').innerText = Math.round(clamped);
 
-      const margin = clamped - (-97);
+      const margin = Math.round(clamped - (-97));
       document.getElementById('valMarginDb').innerText = '+' + margin + ' dB';
       document.getElementById('hdrMargin').innerText = '+' + margin + ' dB';
 
@@ -1229,17 +1207,7 @@
       const targetY = 125 + radDist * Math.sin(angle);
       document.getElementById('radarTargetBlip').setAttribute('transform', `translate(${targetX}, ${targetY})`);
       document.getElementById('radarDistTag').innerText = distFt.toFixed(1) + ' FT';
-      document.getElementById('radarRssiTag').innerText = clamped + ' dBm';
-
-      // Tag Callout box position
-      const tagRect = document.getElementById('radarTagRect');
-      if (radDist < 20) {
-        tagRect.setAttribute('x', '10');
-        tagRect.setAttribute('y', '-22');
-      } else {
-        tagRect.setAttribute('x', '8');
-        tagRect.setAttribute('y', '-18');
-      }
+      document.getElementById('radarRssiTag').innerText = Math.round(clamped) + ' dBm';
 
       // Distance labels
       const distDesc = distFt < 5.0 ? ' (DESK)' : ' LOS';
@@ -1265,7 +1233,7 @@
         badgeJ.className = 'nfpa-badge';
         badgeJ.style.background = 'rgba(251,191,36,0.18)';
         badgeJ.style.color = '#fbbf24';
-        badgeJ.innerText = '⚠ BENCH TEST (2 FT)';
+        badgeJ.innerText = '⚠ BENCH (2 FT)';
         annunNfpa.innerText = '⚠ BENCH / NEAR-FIELD';
         annunNfpa.style.color = '#fbbf24';
       } else {
@@ -1280,51 +1248,58 @@
       }
     }
 
-    // Packet receiver: buffers data without touching DOM synchronously
+    // Packet receiver with targets
     function handleTelemetryPacket(d) {
       packetCount++;
-      // Calculate calibrated distance if not provided or uncalibrated
-      if (!d.dist_ft || d.dist_ft > 10 && d.rssi > -35) {
+      if (!d.dist_ft || (d.dist_ft > 10 && d.rssi > -35)) {
         d.dist_ft = calculateDistance(d.rssi);
         d.dist_m = d.dist_ft * 0.3048;
       }
-      pendingPacket = d;
-      isDirty = true;
+
+      targetThrust = d.thrust;
+      targetRssi = d.rssi;
+      targetDist = d.dist_ft;
+      targetNozzle = d.temp_nozzle;
+
       flightLog.push(d);
     }
 
-    // High-performance requestAnimationFrame render loop (capping at 60 FPS, skipping redundant renders)
-    function renderLoop() {
+    // High-performance, zero-glitch render loop with smooth interpolation
+    let lastChartPush = 0;
+    function renderLoop(timestamp) {
       if (!isTabVisible) return;
 
-      if (isDirty && pendingPacket) {
-        isDirty = false;
-        const d = pendingPacket;
+      // Exponential Moving Average smoothing (eliminates all jitter/vibration)
+      smoothThrust += (targetThrust - smoothThrust) * 0.25;
+      smoothRssi += (targetRssi - smoothRssi) * 0.15;
+      smoothDist += (targetDist - smoothDist) * 0.15;
 
-        document.getElementById('lblPacketTotal').innerText = packetCount.toLocaleString();
-        setThrustGauge(d.thrust);
-        setRfGauge(d.rssi, d.dist_ft);
+      document.getElementById('lblPacketTotal').innerText = packetCount.toLocaleString();
+      updateThrustGauge(smoothThrust);
+      updateRfGauge(smoothRssi, smoothDist);
 
-        if (d.temp_nozzle > maxNozzle) {
-          maxNozzle = d.temp_nozzle;
-          document.getElementById('lblMaxNozzle').innerText = maxNozzle.toFixed(1) + '°F';
-        }
+      if (targetNozzle > maxNozzle) {
+        maxNozzle = targetNozzle;
+        document.getElementById('lblMaxNozzle').innerText = maxNozzle.toFixed(1) + '°F';
+      }
 
-        thrustSeries.push(d.thrust);
+      // Throttle chart push to 15 Hz for absolute smoothness
+      if (timestamp - lastChartPush > 66) {
+        lastChartPush = timestamp;
+        thrustSeries.push(smoothThrust);
         thrustSeries.shift();
-        nozzleSeries.push(d.temp_nozzle);
+        nozzleSeries.push(targetNozzle);
         nozzleSeries.shift();
-
-        // liveChart.update('none') bypasses all layout recalculations and animation frames
         liveChart.update('none');
+      }
 
-        if (d.thrust > 5.0 && !isBurning) {
-          isBurning = true;
-          playIgnitionAudio();
-        } else if (d.thrust < 1.0 && isBurning) {
-          isBurning = false;
-          playBeep(1200, 0.2, 'sine');
-        }
+      // Audio cues
+      if (smoothThrust > 5.0 && !isBurning) {
+        isBurning = true;
+        playIgnitionAudio();
+      } else if (smoothThrust < 1.0 && isBurning) {
+        isBurning = false;
+        playBeep(1200, 0.2, 'sine');
       }
 
       requestAnimationFrame(renderLoop);
@@ -1387,7 +1362,7 @@
 
         let nozzle = 72 + Math.min(380, step * 9.5);
         let casing = 72 + Math.min(85, step * 2.1);
-        let rssi = -31 + Math.floor(Math.random() * 3 - 1);
+        let rssi = -31;
         let dist = 2.1;
 
         handleTelemetryPacket({
@@ -1408,7 +1383,7 @@
       }, 50);
     }
 
-    // Simulation: Dynamic Walk Out Test (2 ft desk -> 320 ft field)
+    // Simulation: Dynamic Walk Out Test (2.1 ft desk -> 320 ft field)
     let simWalkInterval = null;
     function simulateWalkOut() {
       initAudio();
@@ -1421,9 +1396,8 @@
         const progress = walkStep / totalWalkSteps;
         const currentDist = progress <= 0.6 ? 2.1 + (progress / 0.6) * 318 : 320 - ((progress - 0.6) / 0.4) * 318;
         
-        // Log-distance RSSI calculation
         const ratio = Math.log10(currentDist * 0.3048);
-        const rssi = Math.round(-35.0 - (ratio * 22.0) + (Math.random() * 2 - 1));
+        const rssi = Math.round(-35.0 - (ratio * 22.0));
 
         handleTelemetryPacket({
           timestamp_ms: walkStep * 100,
@@ -1463,8 +1437,8 @@
     }
 
     // Set initial calibrated state on load (2.1 ft desk reading at -31 dBm)
-    setThrustGauge(0.0);
-    setRfGauge(-31, 2.1);
+    updateThrustGauge(0.0);
+    updateRfGauge(-31, 2.1);
   </script>
 </body>
 </html>

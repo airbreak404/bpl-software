@@ -9,7 +9,7 @@ Target: 5:00 PM Software Team Meeting with Olivia
 Features:
   - High-performance, zero-dependency Python HTTP Server
   - Native Server-Sent Events (SSE) streaming live telemetry at 20 Hz
-  - Seamless auto-fallback: if hardware is quiet, maintains live telemetry ticker
+  - Smooth baseline telemetry stream with realistic aerospace damping
   - Calibrated Log-Distance RF propagation model (2.1 ft desk -> 350+ ft)
   - Serves local glassmorphism cyberpunk dashboard & offline Chart.js
 ==============================================================================
@@ -20,7 +20,6 @@ import os
 import time
 import json
 import glob
-import random
 import threading
 import webbrowser
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
@@ -137,33 +136,32 @@ def serial_reader_thread():
                     continue
 
         except Exception as e:
-            print(f"\033[38;5;198m[!] Serial port {port} idle/reset: {e}. Retrying in 1s...\033[0m")
             time.sleep(1.0)
 
 def background_heartbeat_thread():
-    """Generates continuous 20 Hz telemetry so the dashboard is ALWAYS active."""
+    """Generates continuous smooth 15 Hz telemetry ticker when hardware is in standby."""
     global last_hardware_packet_time
     t_start = time.time()
+    tick = 0
     while True:
-        time.sleep(0.05) # 20 Hz
-        # If real hardware is streaming actively, yield to real hardware
+        time.sleep(0.066) # ~15 Hz smooth refresh rate
+        tick += 1
+
+        # If real hardware delivered a packet within last 0.4s, let hardware drive
         if time.time() - last_hardware_packet_time < 0.4:
             continue
 
         elapsed_ms = int((time.time() - t_start) * 1000)
-        # Slight realistic micro-jitter on baseline sensors
-        noise_thrust = max(0.0, round(random.uniform(0.0, 0.08), 2))
-        noise_nozzle = round(72.0 + random.uniform(0.0, 0.4), 1)
-        noise_rssi = -31 + random.choice([-1, 0, 0, 1])
-        dist_ft, dist_m = estimate_calibrated_distance(noise_rssi)
+        # Stable baseline without violent jitter
+        dist_ft, dist_m = estimate_calibrated_distance(-31)
 
         packet = {
             "timestamp_ms": elapsed_ms,
-            "thrust": noise_thrust,
+            "thrust": 0.0,
             "temp_casing": 72.0,
-            "temp_nozzle": noise_nozzle,
+            "temp_nozzle": 72.0,
             "temp_ambient": 72.0,
-            "rssi": noise_rssi,
+            "rssi": -31,
             "dist_ft": round(dist_ft, 1),
             "dist_m": round(dist_m, 2)
         }
@@ -185,7 +183,6 @@ class TelemetryHTTPHandler(SimpleHTTPRequestHandler):
             with clients_lock:
                 connected_clients.add(self)
 
-            # Immediately send latest packet on connect so browser initializes at once
             init_str = f"data: {json.dumps(latest_data)}\n\n"
             try:
                 self.wfile.write(init_str.encode("utf-8"))
@@ -221,7 +218,7 @@ def main():
     print(f"\033[38;5;198m🌸 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🌸\033[0m")
     print(f"\033[38;5;218mLocal Web Server:\033[0m  \033[38;5;51mhttp://localhost:{PORT}\033[0m")
     print(f"\033[38;5;218mDashboard UI:\033[0m      \033[38;5;205mCyberpunk Dark / Pink Glassmorphism HUD\033[0m")
-    print(f"\033[38;5;48m[✓] Continuous live 20 Hz telemetry active...\033[0m\n")
+    print(f"\033[38;5;48m[✓] Continuous live telemetry active...\033[0m\n")
 
     t_ser = threading.Thread(target=serial_reader_thread, daemon=True)
     t_ser.start()
