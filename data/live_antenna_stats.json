@@ -1,0 +1,13 @@
+{
+  "session_id": "20261124_150143",
+  "elapsed_seconds": 74.8,
+  "total_received": 1285,
+  "total_dropped": 197,
+  "loss_rate_pct": 1.34,
+  "current_rssi": -84,
+  "avg_rssi": -71.0,
+  "min_rssi": -97,
+  "max_rssi": -37,
+  "quality": "FAIR / WEAK",
+  "csv_file": "/Users/thoward/Repos/bpl-software/data/antenna_benchmark_20261124_150143.csv"
+}

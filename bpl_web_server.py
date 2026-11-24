@@ -126,18 +126,30 @@ def estimate_calibrated_distance(rssi_dbm, n=2.2, rssi_1m=-35.0):
 
 
 def find_serial_port():
+    # macOS direct port lookup
     mac_ports = glob.glob("/dev/cu.usbmodem*") + glob.glob("/dev/cu.usbserial*") + glob.glob("/dev/cu.wch*")
     if mac_ports:
         return mac_ports[0]
 
-    ports = list(serial.tools.list_ports.comports())
-    for p in ports:
-        if p.vid in [0x1A86, 0x303A, 0x10C4, 0x0403]:
-            return p.device
-    for p in ports:
-        desc = (p.description or "").lower()
-        if any(term in desc for term in ["espressif", "ch34", "cp210", "ftdi", "uart", "usbmodem"]):
-            return p.device
+    # Linux direct port lookup
+    linux_ports = glob.glob("/dev/ttyACM*") + glob.glob("/dev/ttyUSB*")
+    if linux_ports:
+        return linux_ports[0]
+
+    # Cross-platform / Windows COM port lookup via pySerial
+    try:
+        ports = list(serial.tools.list_ports.comports())
+        for p in ports:
+            if p.vid in [0x1A86, 0x303A, 0x10C4, 0x0403]:
+                return p.device
+        for p in ports:
+            desc = (p.description or "").lower()
+            if any(term in desc for term in ["espressif", "ch34", "cp210", "ftdi", "uart", "usbmodem", "usb serial"]):
+                return p.device
+        if ports:
+            return ports[0].device
+    except Exception:
+        pass
     return None
 
 

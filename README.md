@@ -32,32 +32,64 @@ When we test a solid rocket motor on the test stand, the motor fires for about 1
 │ • Built-in J425R Simulation Mode      │                                     │ USB (115200 baud)
 └───────────────────────────────────────┘                                     v
                                                           ┌───────────────────────────────────────┐
-                                                          │ ground_station.py & Serial Studio     │
-                                                          │ • Live terminal telemetry stream      │
-                                                          │ • Real-time dials, gauges, and CSV log│
+                                                          │  🌸 BPL Web Mission Control (5050)    │
+                                                          │  • Single-Screen Cyberpunk Dark/Pink  │
+                                                          │  • 200 Hz Serial DAQ, 25 Hz SSE Decim │
+                                                          │  • Real-time Dials, Reticles, Radar   │
+                                                          │  • NFPA 1127 Regulatory Safety Matrix │
+                                                          │  • 1-Click Launch (Windows/Mac/Linux) │
                                                           └───────────────────────────────────────┘
 ```
+
+---
+
+## 🚀 One-Click Launchers (Cross-Platform)
+
+| Operating System | Launcher Script | Instructions |
+| :--- | :--- | :--- |
+| **Windows 10 / 11** | `Launch_BPL_Web_Dashboard.bat` | Double-click to auto-detect COM port & open browser. See [Windows Setup Guide](docs/WINDOWS_SETUP_GUIDE.md). |
+| **macOS** | `Launch_BPL_Web_Dashboard.command` | Double-click to launch server and open Chrome/Safari at `http://localhost:5050`. |
+| **Linux (Ubuntu/Debian)** | `Launch_BPL_Web_Dashboard.sh` | Run `./Launch_BPL_Web_Dashboard.sh` to auto-detect `/dev/ttyACM0` and start dashboard. |
+
+---
+
+## 🌐 Browser Compatibility Matrix
+
+| Browser | OS Compatibility | Hardware Acceleration | Audio Telemetry |
+| :--- | :--- | :--- | :--- |
+| **Google Chrome** | Windows, macOS, Linux | ✅ Yes | ✅ Supported (Toggle in header) |
+| **Microsoft Edge** | Windows, macOS | ✅ Yes | ✅ Supported |
+| **Brave Browser** | Windows, macOS, Linux | ✅ Yes (Throttling eliminated) | ✅ Supported |
+| **Mozilla Firefox** | Windows, macOS, Linux | ✅ Yes | ✅ Supported |
+| **Safari / WebKit** | macOS, iPadOS, iOS (LAN) | ✅ Yes | ✅ Supported |
 
 ---
 
 ## Repository Structure
 
 ```
-BPL_Software/
-├── ground_station.py                  # Live telemetry monitor (USB serial & Wi-Fi bridge)
+bpl-software/
+├── bpl_web_server.py                  # High-performance 200 Hz Serial DAQ & 25 Hz SSE Web Server
+├── web/
+│   ├── index.html                     # Mission Control Glassmorphism Dashboard UI
+│   └── dashboard_screenshot.png       # Live 1440x900 verified dashboard render
+├── Launch_BPL_Web_Dashboard.bat       # 1-Click Windows Launcher
+├── Launch_BPL_Web_Dashboard.command   # 1-Click macOS Launcher
+├── Launch_BPL_Web_Dashboard.sh        # 1-Click Linux Launcher
+├── ground_station.py                  # Terminal telemetry monitor (USB serial & Wi-Fi bridge)
 ├── processor.py                       # Automated data analysis, thrust curves & Excel reports
 ├── simulator.py                       # Simulated rocket burn generator (J425R, J435WS, KNSB)
 ├── calibrate.py                       # Interactive load cell scale calibration tool
-├── run_live_monitor.command           # Double-clickable macOS launcher for the ground station
-├── requirements.txt                   # Python package dependencies
-├── bpl_serial_studio_dashboard.json   # Serial Studio real-time visualizer layout
-├── firmware/
-│   ├── README.md                      # Flashing guide & KiCad Rev 2 pinout documentation
-│   ├── bpl_receiver_esp32/            # Board 1: Ground receiver firmware
-│   └── bpl_test_stand_esp32/          # Board 2: Stand transmitter & simulation firmware
-├── data/                              # Sample and recorded test CSV logs
-├── reports/                           # Output PNG analysis graphs and Excel workbooks
-└── docs/                              # PDR slides, test day checklists, and architecture docs
+├── requirements.txt                   # Minimal Python dependencies (pyserial>=3.5)
+├── docs/
+│   ├── WINDOWS_SETUP_GUIDE.md         # Step-by-step Windows team guide
+│   └── ...                            # Architecture & PDR docs
+├── reports/
+│   ├── ANTENNA_BENCHMARK_REPORT.md    # 3-Phase external antenna range benchmark report
+│   └── ...                            # Analysis graphs and summary spreadsheets
+└── firmware/
+    ├── bpl_receiver_esp32/            # Board 1: Ground receiver firmware (ESP-NOW)
+    └── bpl_test_stand_esp32/          # Board 2: Stand transmitter & DAQ firmware
 ```
 
 ---
