@@ -841,14 +841,12 @@
             <circle cx="125" cy="38" r="5" fill="none" stroke="#ff71ce" stroke-width="1.2" opacity="0.8" />
             <circle cx="125" cy="110" r="7" fill="#120a20" stroke="#ff2a85" stroke-width="2" />
             <circle cx="125" cy="110" r="3" fill="#00f0ff" />
+          <!-- Digital Readout (Inside SVG for exact mathematical positioning) -->
+          <g text-anchor="middle">
+            <text x="125" y="142" id="valThrust" fill="var(--text-bright)" font-family="var(--font-mono)" font-size="22" font-weight="900" letter-spacing="-0.5" filter="drop-shadow(0 0 10px rgba(255, 42, 133, 0.45))">0.0</text>
+            <text x="125" y="155" fill="var(--pink-soft)" font-family="var(--font-mono)" font-size="7" font-weight="800" letter-spacing="0.5">THRUST (LBF) • <tspan id="valThrustNewtons" fill="var(--cyan-cyber)">0 N</tspan></text>
           </g>
         </svg>
-
-        <!-- Digital Center Readout -->
-        <div class="gauge-center-text">
-          <div class="gauge-val-huge" id="valThrust">0.0</div>
-          <div class="gauge-unit">THRUST (LBF) • <span id="valThrustNewtons" style="color: var(--cyan-cyber);">0 N</span></div>
-        </div>
       </div>
 
       <!-- Footer Sub-Stats (Fully Dynamic) -->
@@ -1035,14 +1033,12 @@
             <circle cx="125" cy="38" r="5" fill="none" stroke="#00f0ff" stroke-width="1.2" opacity="0.8" />
             <circle cx="125" cy="110" r="7" fill="#120a20" stroke="#00f0ff" stroke-width="2" />
             <circle cx="125" cy="110" r="3" fill="#ff71ce" />
+          <!-- Digital Readout (Inside SVG for exact mathematical positioning) -->
+          <g text-anchor="middle">
+            <text x="125" y="142" id="valRssi" fill="var(--cyan-cyber)" font-family="var(--font-mono)" font-size="22" font-weight="900" letter-spacing="-0.5" filter="drop-shadow(0 0 10px rgba(0, 240, 255, 0.45))">-27</text>
+            <text x="125" y="155" fill="var(--pink-soft)" font-family="var(--font-mono)" font-size="7" font-weight="800" letter-spacing="0.5">RF SIGNAL (dBm)</text>
           </g>
         </svg>
-
-        <!-- Digital RF Center Readout -->
-        <div class="gauge-center-text">
-          <div class="gauge-val-huge" id="valRssi" style="color: var(--cyan-cyber); margin-bottom: 2px;">-27</div>
-          <div class="gauge-unit">RF SIGNAL (dBm)</div>
-        </div>
       </div>
 
       <!-- Footer Sub-Stats (Fully Dynamic) -->
@@ -1412,11 +1408,11 @@
       document.getElementById('svgThrustArc').setAttribute('stroke-dashoffset', offset);
       
       const valElem = document.getElementById('valThrust');
-      valElem.innerText = clamped.toFixed(1);
+      valElem.textContent = clamped.toFixed(1);
 
       // Dual lbf and Newtons
       const newtons = Math.round(clamped * 4.44822);
-      document.getElementById('valThrustNewtons').innerText = `${newtons} N`;
+      document.getElementById('valThrustNewtons').textContent = `${newtons} N`;
 
       if (clamped > peakThrust) {
         peakThrust = clamped;
@@ -1437,21 +1433,21 @@
         tag.style.color = '#ff2a85';
         tag.style.borderColor = '#ff2a85';
         tag.style.background = 'rgba(255, 42, 133, 0.25)';
-        valElem.className = 'gauge-val-huge active-pulse';
+        valElem.setAttribute('fill', '#ff2a85');
         if (card) card.classList.add('firing-active');
       } else if (targetNozzle > 120) {
         tag.innerText = '❄️ COOLDOWN';
         tag.style.color = '#a855f7';
         tag.style.borderColor = '#a855f7';
         tag.style.background = 'rgba(168, 85, 247, 0.15)';
-        valElem.className = 'gauge-val-huge';
+        valElem.setAttribute('fill', 'var(--text-bright)');
         if (card) card.classList.remove('firing-active');
       } else {
         tag.innerText = 'ARMED';
         tag.style.color = '#10b981';
         tag.style.borderColor = 'rgba(16,185,129,0.3)';
         tag.style.background = 'rgba(16, 185, 129, 0.12)';
-        valElem.className = 'gauge-val-huge';
+        valElem.setAttribute('fill', 'var(--text-bright)');
         if (card) card.classList.remove('firing-active');
       }
     }
@@ -1464,7 +1460,7 @@
       
       const offset = 358.2 - ratio * 358.2;
       document.getElementById('svgRfArc').setAttribute('stroke-dashoffset', offset);
-      document.getElementById('valRssi').innerText = Math.round(clamped);
+      document.getElementById('valRssi').textContent = Math.round(clamped);
 
       // Safety Margin (RSSI - RX Sensitivity of -97 dBm)
       const margin = Math.round(clamped - (-97));
