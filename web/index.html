@@ -39,9 +39,9 @@
     body {
       background-color: var(--bg-base);
       background-image: 
-        radial-gradient(circle at 50% 0%, rgba(255, 42, 133, 0.16) 0%, transparent 60%),
-        radial-gradient(circle at 10% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
-        radial-gradient(circle at 90% 70%, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 50% 0%, rgba(255, 42, 133, 0.18) 0%, transparent 60%),
+        radial-gradient(circle at 10% 80%, rgba(168, 85, 247, 0.14) 0%, transparent 50%),
+        radial-gradient(circle at 90% 70%, rgba(0, 240, 255, 0.1) 0%, transparent 50%),
         linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
       background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px, 32px 32px;
@@ -49,11 +49,40 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
       height: 100vh;
       max-height: 100vh;
-      padding: 10px 16px;
-      overflow-y: auto;
+      padding: 8px 16px;
+      overflow-y: hidden;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+    }
+
+    @media (max-height: 850px) {
+      body {
+        overflow-y: auto;
+      }
+    }
+
+    /* Keyframe Animations */
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), 0 0 15px rgba(255, 42, 133, 0.25);
+        border-color: rgba(255, 42, 133, 0.4);
+      }
+      50% {
+        box-shadow: 0 8px 32px rgba(255, 42, 133, 0.6), 0 0 35px rgba(255, 113, 206, 0.45);
+        border-color: var(--pink-glow);
+      }
+    }
+
+    @keyframes fireTextPulse {
+      0%, 100% { text-shadow: 0 0 16px rgba(255, 42, 133, 0.5); }
+      50% { text-shadow: 0 0 32px #ff2a85, 0 0 45px #ff71ce; }
+    }
+
+    @keyframes beaconPing {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.6); opacity: 0.4; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
     /* Mission Control Header */
@@ -64,7 +93,7 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-glow);
       border-radius: 14px;
-      padding: 8px 18px;
+      padding: 6px 16px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       position: relative;
       flex-shrink: 0;
@@ -87,18 +116,25 @@
     .brand-emblem {
       width: 38px;
       height: 38px;
-      background: linear-gradient(135deg, rgba(255, 42, 133, 0.25), rgba(168, 85, 247, 0.35));
+      background: radial-gradient(circle, rgba(255, 42, 133, 0.35) 0%, rgba(168, 85, 247, 0.2) 100%);
       border: 1.5px solid var(--pink-glow);
-      border-radius: 10px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 20px;
-      box-shadow: 0 0 12px rgba(255, 42, 133, 0.4);
+      box-shadow: 0 0 16px rgba(255, 42, 133, 0.45), inset 0 0 10px rgba(255, 113, 206, 0.25);
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .brand-emblem:hover {
+      transform: rotate(12deg) scale(1.08);
+      box-shadow: 0 0 25px rgba(255, 113, 206, 0.8), inset 0 0 15px rgba(255, 42, 133, 0.5);
     }
 
     .brand-titles h1 {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 900;
       letter-spacing: -0.2px;
       background: linear-gradient(135deg, #ffffff 10%, var(--pink-soft) 55%, var(--pink-glow) 100%);
@@ -110,7 +146,7 @@
     }
 
     .brand-titles h1 span.subhead {
-      font-size: 10px;
+      font-size: 9.5px;
       padding: 2px 7px;
       border-radius: 5px;
       background: rgba(255, 42, 133, 0.15);
@@ -123,17 +159,17 @@
     }
 
     .brand-titles p {
-      font-size: 10px;
+      font-size: 9.5px;
       color: var(--text-muted);
       letter-spacing: 0.5px;
       font-family: var(--font-mono);
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     .header-center-telemetry {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
     }
 
     .telemetry-pill {
@@ -144,17 +180,17 @@
     }
 
     .telemetry-pill-lbl {
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 800;
       color: var(--pink-soft);
-      letter-spacing: 1.1px;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
 
     .telemetry-pill-val {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 800;
       color: var(--cyan-cyber);
       letter-spacing: 0.4px;
@@ -164,16 +200,16 @@
     .header-controls {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .btn {
       background: linear-gradient(135deg, var(--pink-primary), #d91b68);
       color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 8px;
-      padding: 6px 14px;
-      font-size: 11px;
+      padding: 5px 13px;
+      font-size: 10.5px;
       font-weight: 800;
       letter-spacing: 0.4px;
       cursor: pointer;
@@ -231,12 +267,18 @@
       flex-direction: column;
       position: relative;
       overflow: hidden;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .annun-card:hover {
+      border-color: var(--pink-glow);
+      transform: translateY(-1px);
     }
 
     .annun-card::before {
       content: "";
       position: absolute;
-      top: 0; left: 0; width: 3px; height: 100%;
+      top: 0; left: 0; width: 3.5px; height: 100%;
       background: var(--pink-primary);
     }
 
@@ -247,7 +289,7 @@
     .annun-card.active-hazard::before { background: var(--red-hazard); }
 
     .annun-lbl {
-      font-size: 8.5px;
+      font-size: 8px;
       font-weight: 800;
       letter-spacing: 0.9px;
       text-transform: uppercase;
@@ -257,7 +299,7 @@
 
     .annun-val {
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 900;
       color: var(--text-bright);
       display: flex;
@@ -273,25 +315,41 @@
       border-radius: 50%;
       background: var(--green-status);
       box-shadow: 0 0 8px var(--green-status);
+      animation: beaconPing 2s infinite ease-in-out;
+      display: inline-block;
+      flex-shrink: 0;
     }
 
     /* Main Mission Grid: Gauges & Radar Scope */
     .telemetry-grid {
       display: grid;
-      grid-template-columns: 330px 1fr 330px;
-      gap: 12px;
+      grid-template-columns: 320px 1fr 320px;
+      gap: 10px;
       flex-shrink: 0;
     }
 
     .panel-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-glow);
-      border-radius: 16px;
-      padding: 12px 16px;
+      border-radius: 14px;
+      padding: 10px 14px;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
       position: relative;
       display: flex;
       flex-direction: column;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* High-Tech Aerospace HUD Corner Brackets */
+    .panel-card::before {
+      content: "";
+      position: absolute;
+      top: 5px; left: 5px;
+      width: 8px; height: 8px;
+      border-top: 2px solid var(--cyan-cyber);
+      border-left: 2px solid var(--cyan-cyber);
+      opacity: 0.7;
+      pointer-events: none;
     }
 
     .panel-card::after {
@@ -305,17 +363,22 @@
       pointer-events: none;
     }
 
+    .panel-card.firing-active {
+      animation: pulseGlow 1.2s infinite ease-in-out;
+      border-color: var(--pink-glow) !important;
+    }
+
     .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       border-bottom: 1px solid rgba(255, 42, 133, 0.15);
-      padding-bottom: 6px;
+      padding-bottom: 5px;
     }
 
     .panel-title {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 800;
       letter-spacing: 0.8px;
       text-transform: uppercase;
@@ -327,7 +390,7 @@
 
     .panel-tag {
       font-family: var(--font-mono);
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 800;
       padding: 2px 7px;
       border-radius: 5px;
@@ -344,27 +407,31 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      margin: 4px 0 8px;
+      margin: 2px 0 6px;
     }
 
     .gauge-svg {
-      width: 230px;
-      height: 155px;
+      width: 225px;
+      height: 150px;
       overflow: visible;
     }
 
     .gauge-center-text {
       position: absolute;
-      bottom: 18px;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
+      pointer-events: none;
     }
 
     .gauge-val-huge {
       font-family: var(--font-mono);
-      font-size: 34px;
+      font-size: 32px;
       font-weight: 900;
       color: var(--text-bright);
       line-height: 1;
@@ -373,24 +440,30 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .gauge-val-huge.active-pulse {
+      animation: fireTextPulse 0.8s infinite ease-in-out;
+      color: #ff71ce !important;
+    }
+
     .gauge-unit {
-      font-size: 9.5px;
+      font-size: 8.5px;
       font-weight: 800;
-      letter-spacing: 1px;
+      letter-spacing: 0.6px;
       text-transform: uppercase;
       color: var(--pink-soft);
-      margin-top: 4px;
+      margin-top: 3px;
+      white-space: nowrap;
     }
 
     .gauge-footer-stats {
       width: 100%;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      background: rgba(0, 0, 0, 0.25);
+      gap: 5px;
+      background: rgba(0, 0, 0, 0.28);
       border: 1px solid rgba(255, 255, 255, 0.05);
       border-radius: 10px;
-      padding: 8px 12px;
+      padding: 6px 10px;
       margin-top: auto;
     }
 
@@ -400,7 +473,7 @@
     }
 
     .stat-lbl {
-      font-size: 8px;
+      font-size: 7.5px;
       color: var(--text-muted);
       font-weight: 700;
       text-transform: uppercase;
@@ -427,8 +500,8 @@
 
     .radar-svg {
       width: 100%;
-      max-width: 360px;
-      height: 250px;
+      max-width: 350px;
+      height: 240px;
     }
 
     #svgThrustNeedleGroup, #svgRfNeedleGroup {
@@ -448,8 +521,8 @@
       flex-wrap: wrap;
       justify-content: center;
       gap: 12px;
-      margin-top: 4px;
-      padding-top: 6px;
+      margin-top: 2px;
+      padding-top: 4px;
       border-top: 1px solid rgba(255, 255, 255, 0.06);
       width: 100%;
     }
@@ -458,7 +531,7 @@
       display: flex;
       align-items: center;
       gap: 5px;
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -466,8 +539,8 @@
     }
 
     .legend-dot {
-      width: 7px;
-      height: 7px;
+      width: 6.5px;
+      height: 6.5px;
       border-radius: 50%;
     }
 
@@ -475,9 +548,9 @@
     .data-grid-two-col {
       display: grid;
       grid-template-columns: 1.35fr 1fr;
-      gap: 12px;
+      gap: 10px;
       flex: 1;
-      min-height: 230px;
+      min-height: 220px;
     }
 
     .chart-panel {
@@ -488,8 +561,8 @@
     .chart-canvas-container {
       position: relative;
       width: 100%;
-      height: 180px;
-      max-height: 180px;
+      height: 175px;
+      max-height: 175px;
       flex-shrink: 0;
     }
 
@@ -497,15 +570,15 @@
     .nfpa-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 10px;
-      margin-top: 4px;
+      font-size: 9.5px;
+      margin-top: 2px;
     }
 
     .nfpa-table th {
       text-align: left;
-      padding: 5px 7px;
+      padding: 4px 6px;
       color: var(--pink-soft);
-      font-size: 8.5px;
+      font-size: 8px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.6px;
@@ -514,7 +587,7 @@
     }
 
     .nfpa-table td {
-      padding: 5px 7px;
+      padding: 4px 6px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       color: var(--text-main);
       font-family: var(--font-mono);
@@ -522,7 +595,7 @@
     }
 
     .nfpa-table tr.active-row {
-      background: rgba(255, 42, 133, 0.14);
+      background: linear-gradient(90deg, rgba(255, 42, 133, 0.18) 0%, rgba(168, 85, 247, 0.08) 100%);
       border-left: 3px solid var(--pink-glow);
     }
 
@@ -530,9 +603,9 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 2px 7px;
+      padding: 2px 6px;
       border-radius: 9999px;
-      font-size: 8px;
+      font-size: 7.5px;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.4px;
@@ -558,13 +631,13 @@
     }
 
     .nfpa-alert-box {
-      margin-top: 8px;
-      padding: 8px 12px;
+      margin-top: 6px;
+      padding: 6px 10px;
       background: rgba(255, 42, 133, 0.08);
       border: 1px solid rgba(255, 42, 133, 0.3);
-      border-radius: 10px;
-      font-size: 10px;
-      line-height: 1.45;
+      border-radius: 8px;
+      font-size: 9.5px;
+      line-height: 1.4;
     }
 
     .nfpa-alert-box strong {
@@ -580,15 +653,15 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-glow);
       border-radius: 12px;
-      padding: 8px 18px;
-      font-size: 10px;
+      padding: 6px 16px;
+      font-size: 9.5px;
       color: var(--text-muted);
       flex-shrink: 0;
     }
 
     .footer-tags {
       display: flex;
-      gap: 14px;
+      gap: 12px;
       align-items: center;
     }
 
@@ -603,7 +676,7 @@
   <!-- Header -->
   <header>
     <div class="brand-section">
-      <div class="brand-emblem">🌸</div>
+      <div class="brand-emblem" title="WMU AIAA Bronco Propulsion Laboratory">🌸</div>
       <div class="brand-titles">
         <h1>
           WMU AIAA • BRONCO PROPULSION LABORATORY
@@ -714,7 +787,7 @@
   <div class="telemetry-grid">
 
     <!-- Left Panel: Rocket Motor Thrust Dynamometer Gauge -->
-    <div class="panel-card">
+    <div class="panel-card" id="cardDynamometer">
       <div class="panel-header">
         <span class="panel-title">🚀 THRUST DYNAMOMETER</span>
         <span class="panel-tag" id="engineStatusTag" style="color: var(--green-status); border-color: rgba(16,185,129,0.3);">ARMED</span>
@@ -733,6 +806,8 @@
           </defs>
           <!-- Gauge Background Arc -->
           <path d="M 45 155 A 85 85 0 1 1 205 155" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12" stroke-linecap="round" />
+          <!-- Concentric Inner Aerospace Guide Track -->
+          <path d="M 52 150 A 75 75 0 1 1 198 150" fill="none" stroke="rgba(255, 113, 206, 0.16)" stroke-width="2" stroke-dasharray="2, 5" />
           <!-- Animated Thrust Arc Fill -->
           <path id="svgThrustArc" d="M 45 155 A 85 85 0 1 1 205 155" fill="none" stroke="url(#thrustArcGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="400" stroke-dashoffset="400" />
           
@@ -749,6 +824,7 @@
           <!-- Needle Indicator with Smooth CSS Interpolation -->
           <g id="svgThrustNeedleGroup" transform="rotate(-135 125 105)">
             <line x1="125" y1="105" x2="125" y2="30" stroke="#ff71ce" stroke-width="2.8" stroke-linecap="round" />
+            <circle cx="125" cy="30" r="2.5" fill="#ffffff" />
             <circle cx="125" cy="105" r="7" fill="#ff2a85" />
             <circle cx="125" cy="105" r="3.5" fill="#ffffff" />
           </g>
@@ -783,7 +859,7 @@
     </div>
 
     <!-- Center Panel: NFPA 1127 Range & Standoff Scope -->
-    <div class="panel-card" style="padding-bottom: 8px;">
+    <div class="panel-card" style="padding-bottom: 6px;">
       <div class="panel-header">
         <span class="panel-title">📡 NFPA 1127 RF RADAR & STANDOFF SCOPE</span>
         <span class="panel-tag" id="radarStandoffTag">1.5 FT (DESK BENCH)</span>
@@ -794,9 +870,9 @@
         <svg class="radar-svg" viewBox="0 0 360 250">
           <defs>
             <radialGradient id="radarGlass" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="rgba(0, 240, 255, 0.04)" />
+              <stop offset="0%" stop-color="rgba(0, 240, 255, 0.05)" />
               <stop offset="70%" stop-color="rgba(255, 42, 133, 0.03)" />
-              <stop offset="100%" stop-color="rgba(10, 4, 20, 0.85)" />
+              <stop offset="100%" stop-color="rgba(10, 4, 20, 0.88)" />
             </radialGradient>
             <!-- Native SVG Sweep Gradient -->
             <linearGradient id="sweepGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -807,7 +883,13 @@
           </defs>
 
           <!-- Radar Base Background -->
-          <circle cx="180" cy="125" r="105" fill="url(#radarGlass)" stroke="rgba(255, 42, 133, 0.25)" stroke-width="1.2" />
+          <circle cx="180" cy="125" r="105" fill="url(#radarGlass)" stroke="rgba(255, 42, 133, 0.28)" stroke-width="1.2" />
+
+          <!-- Subtle Holographic Sakura Watermark Accent -->
+          <g transform="translate(180, 125) scale(0.65)" opacity="0.04" pointer-events="none">
+            <path d="M 0,-40 C 15,-20 35,-15 40,0 C 35,15 15,20 0,40 C -15,20 -35,15 -40,0 C -35,-15 -15,-20 0,-40 Z" fill="#ff71ce" />
+            <path d="M -38,-12 C -20,-15 -15,-35 0,-40 C 15,-35 20,-15 38,-12 C 20,-5 15,15 0,20 C -15,15 -20,-5 -38,-12 Z" fill="#ff2a85" transform="rotate(36)" />
+          </g>
 
           <!-- Distance Range Rings -->
           <!-- 100 ft Ring (NFPA J-Class Minimum Safe Perimeter: r = 31) -->
@@ -822,12 +904,18 @@
           <circle cx="180" cy="125" r="94" fill="none" stroke="rgba(251, 191, 36, 0.4)" stroke-width="1" stroke-dasharray="4,4" />
           <text x="180" y="28" fill="#fbbf24" font-size="5" font-weight="700" font-family="var(--font-mono)" text-anchor="middle">L-CLASS STANDOFF (300 FT)</text>
 
+          <!-- Outer Cardinal Degree Markers -->
+          <text x="180" y="16" fill="#ff71ce" font-size="6.5" font-weight="900" font-family="var(--font-mono)" text-anchor="middle">000° N</text>
+          <text x="296" y="127" fill="#ff71ce" font-size="6.5" font-weight="900" font-family="var(--font-mono)" text-anchor="middle">090° E</text>
+          <text x="180" y="238" fill="#ff71ce" font-size="6.5" font-weight="900" font-family="var(--font-mono)" text-anchor="middle">180° S</text>
+          <text x="64" y="127" fill="#ff71ce" font-size="6.5" font-weight="900" font-family="var(--font-mono)" text-anchor="middle">270° W</text>
+
           <!-- Azimuth Grid Lines -->
           <line x1="75" y1="125" x2="285" y2="125" stroke="rgba(255, 255, 255, 0.08)" stroke-width="0.8" />
           <line x1="180" y1="20" x2="180" y2="230" stroke="rgba(255, 255, 255, 0.08)" stroke-width="0.8" />
 
           <!-- Dynamic Standoff Vector Line connecting Ground Station (180, 125) to Stand Target -->
-          <line id="radarVectorLine" x1="180" y1="125" x2="186" y2="117" stroke="rgba(255, 113, 206, 0.5)" stroke-width="1.2" stroke-dasharray="2,2" />
+          <line id="radarVectorLine" x1="180" y1="125" x2="186" y2="117" stroke="rgba(255, 113, 206, 0.6)" stroke-width="1.2" stroke-dasharray="2,2" />
 
           <!-- Smooth Native SVG Rotating Sweep Beam -->
           <g>
@@ -836,13 +924,22 @@
             <animateTransform attributeName="transform" type="rotate" from="0 180 125" to="360 180 125" dur="3.5s" repeatCount="indefinite" />
           </g>
 
-          <!-- Ground Station Center Blip (0 ft) -->
+          <!-- Ground Station Center Blip (0 ft) with Cyan Sonar Pulse -->
+          <circle cx="180" cy="125" r="4" fill="none" stroke="#00f0ff" stroke-width="1">
+            <animate attributeName="r" values="4;14" dur="2.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.8;0" dur="2.5s" repeatCount="indefinite" />
+          </circle>
           <circle cx="180" cy="125" r="4" fill="#00f0ff" />
           <circle cx="180" cy="125" r="7" fill="none" stroke="#00f0ff" stroke-width="1" />
           <text x="180" y="139" fill="#00f0ff" font-size="6.5" font-weight="900" font-family="var(--font-mono)" text-anchor="middle">BUNKER (0 FT)</text>
 
-          <!-- Stand Transmitter Target Blip (Dynamic position updated with .textContent) -->
+          <!-- Stand Transmitter Target Blip (Dynamic position updated with .textContent & Radiating Beacon Ping) -->
           <g id="radarTargetBlip" transform="translate(186, 117)">
+            <!-- Radiating Transponder Ping Pulse -->
+            <circle cx="0" cy="0" r="5" fill="none" stroke="#ff71ce" stroke-width="1.2">
+              <animate attributeName="r" values="5;22" dur="1.8s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.9;0" dur="1.8s" repeatCount="indefinite" />
+            </circle>
             <circle cx="0" cy="0" r="5" fill="#ff2a85" />
             <circle cx="0" cy="0" r="8" fill="none" stroke="#ff2a85" stroke-width="1" />
             <circle cx="0" cy="0" r="2" fill="#ffffff" />
@@ -884,6 +981,8 @@
           </defs>
           <!-- Gauge Background Arc -->
           <path d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="11" stroke-linecap="round" />
+          <!-- Concentric Inner Guide Track -->
+          <path d="M 70 156 A 75 75 0 1 1 180 156" fill="none" stroke="rgba(0, 240, 255, 0.16)" stroke-width="2" stroke-dasharray="2, 5" />
           <!-- Animated RF Arc Fill -->
           <path id="svgRfArc" d="M 64.89 160.1 A 85 85 0 1 1 185.1 160.1" fill="none" stroke="url(#rfArcGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="400" stroke-dashoffset="100" />
           
@@ -900,6 +999,7 @@
           <!-- Needle Indicator with Smooth CSS Interpolation -->
           <g id="svgRfNeedleGroup" transform="rotate(135 125 105)">
             <line x1="125" y1="105" x2="125" y2="30" stroke="#00f0ff" stroke-width="2.8" stroke-linecap="round" />
+            <circle cx="125" cy="30" r="2.5" fill="#ffffff" />
             <circle cx="125" cy="105" r="7" fill="#00f0ff" />
             <circle cx="125" cy="105" r="3.5" fill="#ffffff" />
           </g>
@@ -942,9 +1042,9 @@
       <div class="panel-header">
         <span class="panel-title">📈 200 Hz TELEMETRY TRACE</span>
         <div style="display: flex; gap: 8px;">
-          <span class="panel-tag" id="chartThrustTag" style="color: var(--pink-glow);">THRUST: 0.0 LBF</span>
-          <span class="panel-tag" id="chartNozzleTag" style="color: var(--amber-caution);">NOZZLE: 72.0°F</span>
-          <span class="panel-tag" id="chartCasingTag" style="color: var(--purple-accent);">CASING: 72.0°F</span>
+          <span class="panel-tag" id="chartThrustTag" style="color: var(--pink-glow);">● THRUST: 0.0 LBF</span>
+          <span class="panel-tag" id="chartNozzleTag" style="color: var(--amber-caution);">▲ NOZZLE: 72.0°F</span>
+          <span class="panel-tag" id="chartCasingTag" style="color: var(--purple-accent);">■ CASING: 72.0°F</span>
         </div>
       </div>
       <div class="chart-canvas-container">
@@ -1043,19 +1143,33 @@
     function playIgnitionAudio() {
       if (!sfxEnabled || !audioCtx) return;
       try {
-        // Deep rumble synthesis
+        // Deep rumble synthesis with supersonic nozzle hiss
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'sawtooth';
-        osc1.frequency.setValueAtTime(65, audioCtx.currentTime);
-        osc1.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.3);
-        osc1.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 1.8);
-        gain1.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        osc1.frequency.setValueAtTime(55, audioCtx.currentTime);
+        osc1.frequency.exponentialRampToValueAtTime(140, audioCtx.currentTime + 0.25);
+        osc1.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 1.8);
+        gain1.gain.setValueAtTime(0.14, audioCtx.currentTime);
         gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.85);
         osc1.connect(gain1);
         gain1.connect(audioCtx.destination);
         osc1.start();
         osc1.stop(audioCtx.currentTime + 1.85);
+
+        // High frequency exhaust noise
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(320, audioCtx.currentTime);
+        osc2.frequency.exponentialRampToValueAtTime(850, audioCtx.currentTime + 0.3);
+        osc2.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 1.8);
+        gain2.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.82);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start();
+        osc2.stop(audioCtx.currentTime + 1.82);
       } catch(e) {}
     }
 
@@ -1081,7 +1195,7 @@
       return "Class M";
     }
 
-    // Rolling Charts Data Buffer (50 points) with 3 Channels
+    // Rolling Charts Data Buffer (50 points) with 3 Channels & Glowing Gradient
     const MAX_PTS = 50;
     const chartLabels = Array(MAX_PTS).fill('');
     const thrustSeries = Array(MAX_PTS).fill(0);
@@ -1089,6 +1203,13 @@
     const casingSeries = Array(MAX_PTS).fill(72);
 
     const ctx = document.getElementById('liveCurveChart').getContext('2d');
+    
+    // Create glowing neon magenta gradient for Thrust area
+    const thrustGrad = ctx.createLinearGradient(0, 0, 0, 175);
+    thrustGrad.addColorStop(0, 'rgba(255, 42, 133, 0.42)');
+    thrustGrad.addColorStop(0.65, 'rgba(255, 42, 133, 0.12)');
+    thrustGrad.addColorStop(1, 'rgba(255, 42, 133, 0.0)');
+
     const liveChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -1098,10 +1219,10 @@
             label: 'Thrust Force (lbf)',
             data: thrustSeries,
             borderColor: '#ff2a85',
-            backgroundColor: 'rgba(255, 42, 133, 0.18)',
-            borderWidth: 2.2,
+            backgroundColor: thrustGrad,
+            borderWidth: 2.4,
             fill: true,
-            tension: 0.3,
+            tension: 0.32,
             pointRadius: 0,
             yAxisID: 'yThrust'
           },
@@ -1119,8 +1240,8 @@
           {
             label: 'Casing Temp (°F)',
             data: casingSeries,
-            borderColor: '#a855f7',
-            borderWidth: 1.5,
+            borderColor: '#c084fc',
+            borderWidth: 1.6,
             borderDash: [2, 3],
             fill: false,
             tension: 0.25,
@@ -1168,7 +1289,7 @@
     let maxNozzle = 72.0;
     let packetCount = 0;
     let flightLog = [];
-    const MAX_FLIGHT_LOG = 10000; // Ring buffer preventing browser memory leaks
+    const MAX_FLIGHT_LOG = 10000;
     let isBurning = false;
     let burnCount = 0;
 
@@ -1179,7 +1300,7 @@
     let lastSampleTimeMs = null;
     let isBurnActive = false;
 
-    // Mode flags: When manual tests run, suspend incoming idle packet overriding
+    // Mode flags
     let isManualBurnRunning = false;
     let isManualWalkRunning = false;
 
@@ -1225,7 +1346,7 @@
 
         if (marginFt >= 0) {
           marginStr = `<span style="color: var(--green-status);">+${marginFt.toFixed(1)} ft (+${marginM.toFixed(1)} m)</span>`;
-          badgeHtml = `<span class="nfpa-badge nfpa-pass">💖 PASS (+${marginFt.toFixed(0)} ft)</span>`;
+          badgeHtml = `<span class="nfpa-badge nfpa-pass">🌸 PASS (+${marginFt.toFixed(0)} ft)</span>`;
         } else if (currentDistFt < 5.0) {
           marginStr = `<span style="color: var(--amber-caution);">${marginFt.toFixed(1)} ft (${marginM.toFixed(1)} m)</span>`;
           badgeHtml = `<span class="nfpa-badge nfpa-warn">⚠ BENCH TEST (${currentDistFt.toFixed(1)} FT)</span>`;
@@ -1235,7 +1356,7 @@
         }
 
         const rowClass = item.isTarget ? 'class="active-row"' : '';
-        const targetMarker = item.isTarget ? '<span style="color: var(--pink-glow); font-size: 8px; margin-left: 4px; font-weight: 800;">[J425R TARGET]</span>' : '';
+        const targetMarker = item.isTarget ? '<span style="color: var(--pink-glow); font-size: 7.5px; margin-left: 4px; font-weight: 800;">[J425R TARGET]</span>' : '';
 
         html += `
           <tr ${rowClass}>
@@ -1259,7 +1380,9 @@
       
       const offset = 400 - (clamped / 120) * 270;
       document.getElementById('svgThrustArc').setAttribute('stroke-dashoffset', offset);
-      document.getElementById('valThrust').innerText = clamped.toFixed(1);
+      
+      const valElem = document.getElementById('valThrust');
+      valElem.innerText = clamped.toFixed(1);
 
       // Dual lbf and Newtons
       const newtons = Math.round(clamped * 4.44822);
@@ -1277,21 +1400,29 @@
       document.getElementById('valChamberPsi').innerText = instPsi + ' PSI';
 
       const tag = document.getElementById('engineStatusTag');
+      const card = document.getElementById('cardDynamometer');
+
       if (clamped > 2.0) {
         tag.innerText = '🔥 ACTIVE FIRING';
         tag.style.color = '#ff2a85';
         tag.style.borderColor = '#ff2a85';
         tag.style.background = 'rgba(255, 42, 133, 0.25)';
+        valElem.className = 'gauge-val-huge active-pulse';
+        if (card) card.classList.add('firing-active');
       } else if (targetNozzle > 120) {
         tag.innerText = '❄️ COOLDOWN';
         tag.style.color = '#a855f7';
         tag.style.borderColor = '#a855f7';
         tag.style.background = 'rgba(168, 85, 247, 0.15)';
+        valElem.className = 'gauge-val-huge';
+        if (card) card.classList.remove('firing-active');
       } else {
         tag.innerText = 'ARMED';
         tag.style.color = '#10b981';
         tag.style.borderColor = 'rgba(16,185,129,0.3)';
         tag.style.background = 'rgba(16, 185, 129, 0.12)';
+        valElem.className = 'gauge-val-huge';
+        if (card) card.classList.remove('firing-active');
       }
     }
 
@@ -1337,7 +1468,7 @@
       const targetY = 125 + radDist * Math.sin(angle);
       document.getElementById('radarTargetBlip').setAttribute('transform', `translate(${targetX}, ${targetY})`);
       
-      // Use .textContent for SVG text elements (compatible across all browsers)
+      // Use .textContent for SVG text elements
       document.getElementById('radarDistTag').textContent = distFt.toFixed(1) + ' FT';
       document.getElementById('radarRssiTag').textContent = Math.round(clamped) + ' dBm';
 
@@ -1352,6 +1483,9 @@
       document.getElementById('lblRangeUnit').innerText = 'FT' + distDesc;
       document.getElementById('radarStandoffTag').innerText = distFt.toFixed(1) + ' FT' + distDesc;
 
+      const pathSub = document.getElementById('lblPathLossSub');
+      if (pathSub) pathSub.innerText = `PATH LOSS: ${Math.round(clamped)} dBm`;
+
       // Update 100% Dynamic NFPA Table
       updateNfpaTable(distFt);
 
@@ -1359,7 +1493,7 @@
       const annunNfpa = document.getElementById('lblNfpaStatus');
       const panelTag = document.getElementById('panelStandoffTag');
       if (distFt >= 100.0) {
-        annunNfpa.innerText = '💖 COMPLIANT (SAFE)';
+        annunNfpa.innerText = '🌸 COMPLIANT (SAFE)';
         annunNfpa.style.color = 'var(--green-status)';
         panelTag.innerText = 'STANDOFF COMPLIANT';
         panelTag.style.color = 'var(--green-status)';
@@ -1381,7 +1515,6 @@
 
     // Packet receiver with dynamic physics integration
     function handleTelemetryPacket(d) {
-      // If manual test is actively overriding display, don't let idle hardware reset values
       if (isManualBurnRunning || isManualWalkRunning) return;
 
       packetCount++;
@@ -1550,9 +1683,9 @@
       }
 
       // Live chart tags
-      document.getElementById('chartThrustTag').innerText = `THRUST: ${smoothThrust.toFixed(1)} LBF`;
-      document.getElementById('chartNozzleTag').innerText = `NOZZLE: ${targetNozzle.toFixed(1)}°F`;
-      document.getElementById('chartCasingTag').innerText = `CASING: ${targetCasing.toFixed(1)}°F`;
+      document.getElementById('chartThrustTag').innerText = `● THRUST: ${smoothThrust.toFixed(1)} LBF`;
+      document.getElementById('chartNozzleTag').innerText = `▲ NOZZLE: ${targetNozzle.toFixed(1)}°F`;
+      document.getElementById('chartCasingTag').innerText = `■ CASING: ${targetCasing.toFixed(1)}°F`;
 
       // Throttle chart push to 20 Hz for silky performance
       if (timestamp - lastChartPush > 50) {
@@ -1617,6 +1750,7 @@
       const fireBtn = document.getElementById('btnFireJ425R');
       fireBtn.disabled = true;
       fireBtn.innerText = '🔥 FIRING...';
+      fireBtn.style.boxShadow = '0 0 25px #ff2a85, 0 0 45px #ff71ce';
 
       if (simBurnInterval) clearInterval(simBurnInterval);
 
@@ -1676,11 +1810,14 @@
           simBurnInterval = null;
           burnCount++;
           document.getElementById('lblBurnCount').innerText = burnCount;
+          const hdrBurns = document.getElementById('hdrBurnCount');
+          if (hdrBurns) hdrBurns.innerText = `${burnCount} CYCLES`;
+          
           fireBtn.disabled = false;
           fireBtn.innerText = '🔥 FIRE J425R';
+          fireBtn.style.boxShadow = '';
           isBurnActive = false;
           
-          // Gradually cool down over next 3 seconds, then release manual lock
           setTimeout(() => {
             isManualBurnRunning = false;
           }, 2500);
