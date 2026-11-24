@@ -35,20 +35,30 @@ typedef struct __attribute__((packed)) {
 
 volatile uint32_t packetsReceived = 0;
 volatile bool newPacketFlag = false;
+volatile int8_t latestRSSI = 0;
 SensorPacket latestPacket;
 
 // ESP-NOW Receive Callback (ESP-IDF 5.x / Arduino ESP32 core 3.x compatible)
 #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
 void onDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len) {
+    if (len == sizeof(SensorPacket)) {
+        memcpy(&latestPacket, data, sizeof(SensorPacket));
+        if (recv_info && recv_info->rx_ctrl) {
+            latestRSSI = recv_info->rx_ctrl->rssi;
+        }
+        packetsReceived++;
+        newPacketFlag = true;
+    }
+}
 #else
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int len) {
-#endif
     if (len == sizeof(SensorPacket)) {
         memcpy(&latestPacket, data, sizeof(SensorPacket));
         packetsReceived++;
         newPacketFlag = true;
     }
 }
+#endif
 
 void setup() {
     Serial.begin(115200);
@@ -84,7 +94,7 @@ void setup() {
 
     Serial.println("[✓] ESP-NOW Receiver Online.");
     Serial.println("[✓] Listening for Stand Telemetry Packets...\n");
-    Serial.println("timestamp_ms,thrust_lbf,temp_casing_f,temp_nozzle_f,temp_ambient_f");
+    Serial.println("timestamp_ms,thrust_lbf,temp_casing_f,temp_nozzle_f,temp_ambient_f,rssi_dbm");
     
     // Soft lavender-pink while ready and listening
     neopixelWrite(PIN_STATUS_LED, 12, 2, 10);
@@ -94,19 +104,26 @@ void loop() {
     if (newPacketFlag) {
         newPacketFlag = false;
 
-        // Print raw CSV row over USB Serial to laptop
-        char buffer[128];
-        snprintf(buffer, sizeof(buffer), "%lu,%.2f,%.1f,%.1f,%.1f",
+        // Print raw CSV row with RSSI over USB Serial to laptop
+        char buffer[140];
+        snprintf(buffer, sizeof(buffer), "%lu,%.2f,%.1f,%.1f,%.1f,%d",
                  latestPacket.timestamp_ms,
                  latestPacket.thrust_lbf,
                  latestPacket.temp_casing_f,
                  latestPacket.temp_nozzle_f,
-                 latestPacket.temp_ambient_f);
+                 latestPacket.temp_ambient_f,
+                 latestRSSI);
 
         Serial.println(buffer);
         
-        // Flash bright neon pink on packet receive
-        neopixelWrite(PIN_STATUS_LED, 35, 2, 22);
+        // Color-code LED: Green/Cyan = Strong, Amber = Fair, Neon Pink/Red = Fringe
+        if (latestRSSI >= -65) {
+            neopixelWrite(PIN_STATUS_LED, 0, 30, 15); // Emerald cyan
+        } else if (latestRSSI >= -80) {
+            neopixelWrite(PIN_STATUS_LED, 25, 15, 0);  // Amber
+        } else {
+            neopixelWrite(PIN_STATUS_LED, 35, 2, 25);  // Neon pink
+        }
     }
 
     // Small yield for background RTOS tasks

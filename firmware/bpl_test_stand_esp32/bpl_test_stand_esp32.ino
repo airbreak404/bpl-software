@@ -50,6 +50,9 @@
 #include <esp_now.h>
 #include <esp_wifi.h>
 
+// Onboard WS2812 RGB LED on YD-ESP32-S3 is on GPIO 48
+#define PIN_STATUS_LED 48
+
 // ----------------- Operation Mode Configuration ------------------
 // Set to true to test the two boards wirelessly on your desk right now!
 // Set to false when connecting to the real stand wiring & sensors.
@@ -193,7 +196,11 @@ void TaskSamplingCore1(void *pvParameters) {
 // ----------------- Setup & Core 0 Loop ---------------------------
 void setup() {
     Serial.begin(115200);
-    delay(1000);
+    delay(500);
+
+    // Initialize RGB Status LED
+    pinMode(PIN_STATUS_LED, OUTPUT);
+    neopixelWrite(PIN_STATUS_LED, 10, 10, 0); // Yellow initializing
 
     Serial.println("\n=======================================================");
     Serial.println("  BPL STATIC TEST STAND — AVIONICS TRANSMITTER        ");
@@ -265,6 +272,19 @@ void loop() {
     if (xQueueReceive(dataQueue, &pkt, portMAX_DELAY) == pdTRUE) {
         // 1. Send wirelessly over ESP-NOW to ground receiver board
         esp_now_send(broadcastAddress, (const uint8_t *)&pkt, sizeof(SensorPacket));
+
+        // Visual LED feedback: Flash bright neon pink on active motor burn, soft lavender on idle
+        if (pkt.thrust_lbf > 2.0f) {
+            neopixelWrite(PIN_STATUS_LED, 40, 2, 25); // Vibrant neon pink on active firing
+        } else {
+            static uint8_t pulseCounter = 0;
+            pulseCounter++;
+            if (pulseCounter % 20 == 0) {
+                neopixelWrite(PIN_STATUS_LED, 8, 1, 10); // Soft purple pulse
+            } else if (pulseCounter % 20 == 10) {
+                neopixelWrite(PIN_STATUS_LED, 1, 0, 3);
+            }
+        }
 
         // 2. Log locally to MicroSD Card if present
         if (sdCardActive && logFile) {
